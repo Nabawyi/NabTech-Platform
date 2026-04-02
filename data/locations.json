@@ -1,0 +1,60 @@
+[
+  {
+    "id": "loc1",
+    "name": "سمنود",
+    "groups": [
+      {
+        "id": "grp1",
+        "name": "مجموعة السبت 4 عصراً",
+        "startTime": "16:00",
+        "endTime": "18:00",
+        "level": "secondary",
+        "gradeNumber": 1,
+        "stage": "secondary",
+        "grade": 1
+      },
+      {
+        "id": "grp2",
+        "name": "مجموعة الثلاثاء 2 ظهراً",
+        "startTime": "14:00",
+        "endTime": "16:00",
+        "level": "secondary",
+        "gradeNumber": 1,
+        "stage": "secondary",
+        "grade": 1
+      }
+    ]
+  },
+  {
+    "id": "loc2",
+    "name": "منية سمنود",
+    "groups": [
+      {
+        "id": "grp3",
+        "name": "مجموعة الأحد 5 مساءً",
+        "startTime": "17:00",
+        "endTime": "19:00",
+        "level": "secondary",
+        "gradeNumber": 1,
+        "stage": "secondary",
+        "grade": 1
+      }
+    ]
+  },
+  {
+    "id": "loc_1775078106645",
+    "name": "cairo",
+    "teacherId": "teacher_1775077876631",
+    "groups": [
+      {
+        "id": "grp_1775078128465",
+        "name": "al serag",
+        "startTime": "14:00",
+        "endTime": "16:00",
+        "stage": "secondary",
+        "grade": 3,
+        "teacherId": "teacher_1775077876631"
+      }
+    ]
+  }
+]

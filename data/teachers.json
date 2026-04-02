@@ -1,0 +1,13 @@
+[
+  {
+    "id": "teacher_1775077876631",
+    "name": "mohmmed salah",
+    "email": "msalah@gmail.com",
+    "phone": "01008957311",
+    "password": "te123",
+    "status": "active",
+    "invite_code": "NAB321",
+    "created_at": "2026-04-01T21:11:16.631Z",
+    "approved_at": "2026-04-01T21:12:02.626Z"
+  }
+]

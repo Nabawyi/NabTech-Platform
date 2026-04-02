@@ -1,0 +1,15 @@
+{
+  "id": "teacher_1775077876631",
+  "name": "mohmmed salah",
+  "inviteCode": "NAB321",
+  "dark_mode": false,
+  "enabled_levels": [
+    "secondary"
+  ],
+  "enabled_grades": [
+    3,
+    4,
+    5,
+    6
+  ]
+}

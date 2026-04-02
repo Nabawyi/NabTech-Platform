@@ -1,0 +1,42 @@
+[
+  {
+    "id": 1775078323971,
+    "studentId": 33001,
+    "teacherId": "teacher_1775077876631",
+    "date": "2026-04-01",
+    "status": "present",
+    "createdAt": "2026-04-01T21:18:43.971Z"
+  },
+  {
+    "id": 1775078326824,
+    "studentId": 33001,
+    "teacherId": "teacher_1775077876631",
+    "date": "2026-03-31",
+    "status": "present",
+    "createdAt": "2026-04-01T21:18:46.824Z"
+  },
+  {
+    "id": 1775078330153,
+    "studentId": 33001,
+    "teacherId": "teacher_1775077876631",
+    "date": "2026-03-21",
+    "status": "present",
+    "createdAt": "2026-04-01T21:18:50.153Z"
+  },
+  {
+    "id": 1775078332532,
+    "studentId": 33001,
+    "teacherId": "teacher_1775077876631",
+    "date": "2026-03-26",
+    "status": "present",
+    "createdAt": "2026-04-01T21:18:52.532Z"
+  },
+  {
+    "id": 1775078336834,
+    "studentId": 33001,
+    "teacherId": "teacher_1775077876631",
+    "date": "2026-03-30",
+    "status": "present",
+    "createdAt": "2026-04-01T21:18:56.834Z"
+  }
+]

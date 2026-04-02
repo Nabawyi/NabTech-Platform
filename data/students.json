@@ -1,0 +1,20 @@
+[
+  {
+    "id": 33001,
+    "teacherId": "teacher_1775077876631",
+    "name": "ali tark",
+    "phone": "01008957322",
+    "parentPhone": "01008957321",
+    "stage": "secondary",
+    "grade": 3,
+    "level": "secondary",
+    "gradeNumber": 3,
+    "gradeDisplay": "الصف الثالث الثانوي",
+    "city": "غير محدد",
+    "locationId": "loc_1775078106645",
+    "groupId": "grp_1775078128465",
+    "password": "st1",
+    "status": "active",
+    "timestamp": "2026-04-01T21:17:56.796Z"
+  }
+]
