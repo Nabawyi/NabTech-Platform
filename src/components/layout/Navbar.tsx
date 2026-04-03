@@ -12,7 +12,9 @@ export default async function Navbar() {
     <nav className="sticky top-0 z-50 w-full bg-slate-900 border-b border-slate-800 shadow-sm">
       <div className="container mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
         {/* Logo */}
-        <Logo href={logoHref} className="brightness-0 invert" />
+        <Link href={logoHref}>
+          <Logo className="brightness-0 invert" />
+        </Link>
         
         {/* Actions */}
         <div className="flex items-center gap-2 sm:gap-4">

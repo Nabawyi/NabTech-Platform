@@ -1,264 +1,200 @@
 "use server";
 
-import fs from "fs";
-import path from "path";
-import type { GroupFormPayload, GroupRecord, LocationRecord, StudentJsonRow } from "@/types/domain";
-import { type Stage, isValidStageGrade } from "@/lib/education";
+import { createAdminClient } from "@/lib/supabase/admin";
+import type { GroupFormPayload, GroupRecord, LocationRecord } from "@/types/domain";
+import { getGradeCode, type Stage, isValidStageGrade } from "@/lib/education";
 import { getUserSession } from "./students";
+import { revalidatePath } from "next/cache";
 
-const dataDir = path.join(process.cwd(), "data");
-const locationsFile = path.join(dataDir, "locations.json");
-const studentsFile = path.join(dataDir, "students.json");
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+// Groups in Supabase are flat. We map them to the LocationRecord shape
+// by grouping on location_name (used as the "location" concept).
 
-const initialLocations: LocationRecord[] = [
-  {
-    id: "loc1",
-    name: "سمنود",
-    teacherId: "teacher_1",
-    groups: [
-      {
-        id: "grp1",
-        name: "مجموعة السبت 4 عصراً",
-        startTime: "16:00",
-        endTime: "18:00",
-        stage: "secondary",
-        grade: 1,
-        teacherId: "teacher_1",
-      },
-      {
-        id: "grp2",
-        name: "مجموعة الثلاثاء 2 ظهراً",
-        startTime: "14:00",
-        endTime: "16:00",
-        stage: "secondary",
-        grade: 1,
-        teacherId: "teacher_1",
-      },
-    ],
-  },
-  {
-    id: "loc2",
-    name: "منية سمنود",
-    teacherId: "teacher_1",
-    groups: [
-      {
-        id: "grp3",
-        name: "مجموعة الأحد 5 مساءً",
-        startTime: "17:00",
-        endTime: "19:00",
-        stage: "secondary",
-        grade: 1,
-        teacherId: "teacher_1",
-      },
-    ],
-  },
-];
-
-export async function initLocationsDb() {
-  if (!fs.existsSync(dataDir)) {
-    fs.mkdirSync(dataDir, { recursive: true });
-  }
-  if (!fs.existsSync(locationsFile)) {
-    fs.writeFileSync(locationsFile, JSON.stringify(initialLocations, null, 2));
-  }
+function mapGroup(g: any): GroupRecord {
+  return {
+    id: g.id,
+    name: g.name,
+    startTime: g.start_time ?? "",
+    endTime: g.end_time ?? "",
+    stage: g.stage as Stage,
+    grade: g.grade,
+    gradeCode: g.grade_code ?? getGradeCode(g.stage, g.grade),
+    teacherId: g.teacher_id,
+  };
 }
 
-export async function getLocations(teacherId?: string): Promise<LocationRecord[]> {
+// ─── Read ─────────────────────────────────────────────────────────────────────
+
+export async function getLocations(teacherId?: string, gradeCode?: string): Promise<LocationRecord[]> {
   const session = await getUserSession();
-  if (!session) throw new Error("Unauthorized");
+  
   let effectiveTeacherId = teacherId;
-  if (session.role === "admin" || session.role === "student") {
+  if (session && (session.role === "admin" || session.role === "student")) {
     effectiveTeacherId = session.teacherId;
   }
-
-  await initLocationsDb();
-  const data = fs.readFileSync(locationsFile, "utf-8");
-  const raw = JSON.parse(data) as LocationRecord[];
   
-  const filtered = effectiveTeacherId 
-    ? raw.filter(l => l.teacherId === effectiveTeacherId)
-    : raw;
+  if (!effectiveTeacherId) throw new Error("Teacher ID is required");
 
-  return filtered.map((loc) => ({
-    ...loc,
-    groups: (loc.groups ?? []).map((g: unknown) => {
-      const gg = g as Record<string, unknown>;
-      const stage = (gg.stage ?? gg.level) as Stage | undefined;
-      const gradeNumber = (gg.grade ?? gg.gradeNumber) as number | undefined;
+  const admin = createAdminClient();
+  let query = admin.from("groups").select("*").order("created_at");
+  if (effectiveTeacherId) query = query.eq("teacher_id", effectiveTeacherId);
+  if (gradeCode) query = query.eq("grade_code", gradeCode);
 
-      const normalizedStage: Stage | undefined =
-        typeof stage === "string" && (["primary", "preparatory", "secondary"] as string[]).includes(stage)
-          ? stage
-          : undefined;
+  console.log(`[getLocations] Teacher context: ${effectiveTeacherId}`);
+  const { data, error } = await query;
+  if (error) {
+    console.error(`[getLocations] Error fetching groups: ${error.message}`);
+    throw new Error(error.message);
+  }
+  
+  console.log(`[getLocations] Found ${data?.length || 0} groups total.`);
 
-      const normalizedGrade =
-        normalizedStage && typeof gradeNumber === "number" && Number.isFinite(gradeNumber) && isValidStageGrade(normalizedStage, gradeNumber)
-          ? gradeNumber
-          : undefined;
 
-      return {
-        ...gg,
-        stage: normalizedStage,
-        grade: normalizedGrade,
-        startTime: String(gg.startTime ?? ""),
-        endTime: String(gg.endTime ?? ""),
-      } as GroupRecord;
-    }),
-  }));
+  // Group by location_name to keep the LocationRecord shape
+  const locationMap = new Map<string, LocationRecord>();
+  for (const g of data ?? []) {
+    const locKey = g.location_name ?? "افتراضي";
+    const locId = g.location_id ?? locKey;
+    if (!locationMap.has(locKey)) {
+      locationMap.set(locKey, { id: locId, name: locKey, teacherId: g.teacher_id, groups: [] });
+    }
+    locationMap.get(locKey)!.groups.push(mapGroup(g));
+  }
+  return Array.from(locationMap.values());
 }
 
-function getStudents(teacherId?: string): StudentJsonRow[] {
-  if (!fs.existsSync(studentsFile)) return [];
-  const list = JSON.parse(fs.readFileSync(studentsFile, "utf-8")) as StudentJsonRow[];
-  return teacherId ? list.filter(s => s.teacherId === teacherId) : list;
-}
+// ─── Location CRUD ────────────────────────────────────────────────────────────
 
 export async function addLocation(name: string, teacherId: string) {
   const session = await getUserSession();
   if (!session || (session.role !== "admin" && session.role !== "owner")) throw new Error("Unauthorized");
   if (session.role === "admin" && teacherId !== session.teacherId) throw new Error("Unauthorized");
-
-  const locations = await getLocations(); // All locations internally to avoid losing others
-  const newLocation: LocationRecord = {
-    id: "loc_" + Date.now(),
-    name,
-    teacherId,
-    groups: [],
-  };
-  locations.push(newLocation);
-  fs.writeFileSync(locationsFile, JSON.stringify(locations, null, 2));
-  return newLocation;
+  // Locations are virtual (stored on group rows). Return a stub.
+  const id = "loc_" + Date.now();
+  return { id, name, teacherId, groups: [] } as LocationRecord;
 }
 
 export async function updateLocation(id: string, name: string) {
   const session = await getUserSession();
   if (!session || (session.role !== "admin" && session.role !== "owner")) throw new Error("Unauthorized");
-
-  const locations = await getLocations();
-  const index = locations.findIndex((l) => l.id === id);
-  if (index > -1) {
-    if (session.role === "admin" && locations[index].teacherId !== session.teacherId) throw new Error("Unauthorized");
-    locations[index].name = name;
-    fs.writeFileSync(locationsFile, JSON.stringify(locations, null, 2));
-    return { success: true };
-  }
-  return { success: false };
+  const admin = createAdminClient();
+  const { error } = await admin.from("groups").update({ location_name: name }).eq("location_id", id);
+  if (error) return { success: false };
+  revalidatePath("/teacher/groups");
+  return { success: true };
 }
 
 export async function deleteLocation(id: string) {
   const session = await getUserSession();
   if (!session || (session.role !== "admin" && session.role !== "owner")) throw new Error("Unauthorized");
-
-  const students = getStudents();
-  const assigned = students.filter((s) => s.locationId === id);
-  if (assigned.length > 0) {
-    return {
-      success: false,
-      error: `لا يمكن الحذف — يوجد ${assigned.length} طالب مسجل في هذا السنتر`,
-    };
+  const admin = createAdminClient();
+  // Check if students are assigned
+  const { data: students } = await admin.from("students").select("id").eq("group_id", id).limit(1);
+  if (students && students.length > 0) {
+    return { success: false, error: `لا يمكن الحذف — يوجد طلاب مسجلون في هذا السنتر` };
   }
-  const fullList = JSON.parse(fs.readFileSync(locationsFile, "utf-8")) as LocationRecord[];
-  const loc = fullList.find((l) => l.id === id);
-  if (!loc) return { success: false };
-  if (session.role === "admin" && loc.teacherId !== session.teacherId) throw new Error("Unauthorized");
-
-  const filtered = fullList.filter((l) => l.id !== id);
-  fs.writeFileSync(locationsFile, JSON.stringify(filtered, null, 2));
+  await admin.from("groups").delete().eq("location_id", id);
+  revalidatePath("/teacher/groups");
   return { success: true };
 }
+
+// ─── Group CRUD ───────────────────────────────────────────────────────────────
 
 export async function addGroup(locationId: string, groupData: GroupFormPayload, teacherId: string) {
   const session = await getUserSession();
   if (!session || (session.role !== "admin" && session.role !== "owner")) throw new Error("Unauthorized");
   if (session.role === "admin" && teacherId !== session.teacherId) throw new Error("Unauthorized");
 
-  const locations = JSON.parse(fs.readFileSync(locationsFile, "utf-8")) as LocationRecord[];
-  const locIndex = locations.findIndex((l) => l.id === locationId);
-  if (locIndex > -1) {
-    const stage = groupData.stage as Stage | undefined;
-    const grade = groupData.grade;
-    if (!stage || typeof grade !== "number" || !isValidStageGrade(stage, grade)) {
-      throw new Error("يجب اختيار مرحلة و صف صالحين للمجموعة.");
-    }
-
-    const newGroup: GroupRecord = {
-      id: "grp_" + Date.now(),
-      name: groupData.name,
-      startTime: groupData.startTime,
-      endTime: groupData.endTime,
-      stage,
-      grade,
-      teacherId,
-    };
-    locations[locIndex].groups.push(newGroup);
-    fs.writeFileSync(locationsFile, JSON.stringify(locations, null, 2));
-    return newGroup;
+  const stage = groupData.stage as Stage | undefined;
+  const grade = groupData.grade;
+  if (!stage || typeof grade !== "number" || !isValidStageGrade(stage, grade)) {
+    throw new Error("يجب اختيار مرحلة وصف صالحين للمجموعة.");
   }
-  return null;
+
+  const admin = createAdminClient();
+  const grade_code = getGradeCode(stage, grade);
+  
+  console.log(`[addGroup] Creating group: ${groupData.name} for teacher: ${teacherId} with gradeCode: ${grade_code}`);
+  
+  const { data, error } = await admin.from("groups").insert({
+    teacher_id: teacherId,
+    name: groupData.name,
+    start_time: groupData.startTime,
+    end_time: groupData.endTime,
+    stage,
+    grade,
+    grade_code,
+    location_id: locationId,
+    location_name: groupData.locationName ?? locationId,
+  }).select().single();
+
+  if (error) {
+    console.error(`[addGroup] Insert failed: ${error.message}`);
+    throw new Error(error.message);
+  }
+  
+  console.log(`[addGroup] Successfully created group ID: ${data.id}`);
+
+  revalidatePath("/teacher/groups");
+  return mapGroup(data);
 }
 
-export async function updateGroup(
-  locationId: string,
-  groupId: string,
-  groupData: Partial<GroupFormPayload>
-) {
+export async function updateGroup(locationId: string, groupId: string, groupData: Partial<GroupFormPayload>) {
   const session = await getUserSession();
   if (!session || (session.role !== "admin" && session.role !== "owner")) throw new Error("Unauthorized");
 
-  const locations = JSON.parse(fs.readFileSync(locationsFile, "utf-8")) as LocationRecord[];
-  const locIndex = locations.findIndex((l) => l.id === locationId);
-  if (locIndex > -1) {
-    if (session.role === "admin" && locations[locIndex].teacherId !== session.teacherId) throw new Error("Unauthorized");
-    const grpIndex = locations[locIndex].groups.findIndex((g) => g.id === groupId);
-    if (grpIndex > -1) {
-      const existing = locations[locIndex].groups[grpIndex];
-      const stage = (groupData.stage ?? existing.stage) as Stage | undefined;
-      const grade = (groupData.grade ?? existing.grade) as number | undefined;
-      if (!stage || typeof grade !== "number" || !isValidStageGrade(stage, grade)) {
-        throw new Error("يجب أن تكون مرحلة المجموعة وصفها صالحين.");
-      }
+  const admin = createAdminClient();
+  const { data: existing } = await admin.from("groups").select("*").eq("id", groupId).single();
+  if (!existing) return { success: false };
+  if (session.role === "admin" && existing.teacher_id !== session.teacherId) throw new Error("Unauthorized");
 
-      locations[locIndex].groups[grpIndex] = {
-        ...locations[locIndex].groups[grpIndex],
-        ...groupData,
-        stage,
-        grade,
-      };
-      fs.writeFileSync(locationsFile, JSON.stringify(locations, null, 2));
-      return { success: true };
-    }
-  }
-  return { success: false };
+  const stage = (groupData.stage ?? existing.stage) as Stage;
+  const grade = (groupData.grade ?? existing.grade) as number;
+  if (!isValidStageGrade(stage, grade)) throw new Error("يجب أن تكون مرحلة المجموعة وصفها صالحين.");
+
+  const { error } = await admin.from("groups").update({
+    name: groupData.name ?? existing.name,
+    start_time: groupData.startTime ?? existing.start_time,
+    end_time: groupData.endTime ?? existing.end_time,
+    stage,
+    grade,
+    grade_code: getGradeCode(stage, grade),
+  }).eq("id", groupId);
+
+
+  if (error) return { success: false };
+  revalidatePath("/teacher/groups");
+  return { success: true };
 }
 
 export async function deleteGroup(locationId: string, groupId: string) {
   const session = await getUserSession();
   if (!session || (session.role !== "admin" && session.role !== "owner")) throw new Error("Unauthorized");
 
-  const students = getStudents();
-  const assigned = students.filter((s) => s.groupId === groupId);
-  if (assigned.length > 0) {
-    return {
-      success: false,
-      error: `لا يمكن الحذف — يوجد ${assigned.length} طالب في هذه المجموعة`,
-    };
+  const admin = createAdminClient();
+  const { data: students } = await admin.from("students").select("id").eq("group_id", groupId).limit(1);
+  if (students && students.length > 0) {
+    return { success: false, error: `لا يمكن الحذف — يوجد طلاب في هذه المجموعة` };
   }
-  const locations = JSON.parse(fs.readFileSync(locationsFile, "utf-8")) as LocationRecord[];
-  const locIndex = locations.findIndex((l) => l.id === locationId);
-  if (locIndex > -1) {
-    if (session.role === "admin" && locations[locIndex].teacherId !== session.teacherId) throw new Error("Unauthorized");
-    locations[locIndex].groups = locations[locIndex].groups.filter((g) => g.id !== groupId);
-    fs.writeFileSync(locationsFile, JSON.stringify(locations, null, 2));
-    return { success: true };
-  }
-  return { success: false };
+
+  const { data: group } = await admin.from("groups").select("teacher_id").eq("id", groupId).single();
+  if (!group) return { success: false };
+  if (session.role === "admin" && group.teacher_id !== session.teacherId) throw new Error("Unauthorized");
+
+  await admin.from("groups").delete().eq("id", groupId);
+  revalidatePath("/teacher/groups");
+  return { success: true };
 }
 
 export async function getGroupStudentCounts(teacherId?: string) {
-  const students = getStudents(teacherId);
+  const admin = createAdminClient();
+  let query = admin.from("students").select("group_id");
+  if (teacherId) query = query.eq("teacher_id", teacherId);
+  const { data } = await query;
+
   const counts: Record<string, number> = {};
-  for (const s of students) {
-    if (s.groupId) counts[s.groupId] = (counts[s.groupId] || 0) + 1;
+  for (const s of data ?? []) {
+    if (s.group_id) counts[s.group_id] = (counts[s.group_id] || 0) + 1;
   }
   return counts;
 }

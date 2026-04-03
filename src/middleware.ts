@@ -1,97 +1,75 @@
-import { NextResponse } from 'next/server';
-import type { NextRequest } from 'next/server';
+import { createServerClient } from '@supabase/ssr';
+import { NextResponse, type NextRequest } from 'next/server';
 
-export function middleware(request: NextRequest) {
-  const session = request.cookies.get('user_session');
+export async function middleware(request: NextRequest) {
+  let supabaseResponse = NextResponse.next({ request });
+
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll() { return request.cookies.getAll(); },
+        setAll(cookiesToSet) {
+          cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value));
+          supabaseResponse = NextResponse.next({ request });
+          cookiesToSet.forEach(({ name, value, options }) =>
+            supabaseResponse.cookies.set(name, value, options)
+          );
+        },
+      },
+    }
+  );
+
+  const { data: { user } } = await supabase.auth.getUser();
   const { pathname } = request.nextUrl;
 
-  // ─── Protect /owner (owner role only) ────────────────────────
+  const redirectTo = (path: string) => {
+    const url = request.nextUrl.clone();
+    url.pathname = path;
+    return NextResponse.redirect(url);
+  };
+
+  let role: string | null = null;
+  if (user) {
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', user.id)
+      .single();
+    role = profile?.role ?? null;
+  }
+
   if (pathname.startsWith('/owner')) {
-    if (!session) {
-      return NextResponse.redirect(new URL('/login', request.url));
-    }
-    try {
-      const userData = JSON.parse(session.value);
-      if (userData.role !== 'owner') {
-        return NextResponse.redirect(new URL('/login', request.url));
-      }
-    } catch {
-      return NextResponse.redirect(new URL('/login', request.url));
-    }
+    if (!user || role !== 'owner') return redirectTo('/login');
   }
 
-  // ─── Protect /admin and /teacher (admin role + must have teacherId) ───────
-  if (pathname.startsWith('/admin') || pathname.startsWith('/teacher')) {
-    if (!session) {
-      return NextResponse.redirect(new URL('/login', request.url));
-    }
-
-    try {
-      const userData = JSON.parse(session.value);
-      if (userData.role !== 'admin') {
-        if (userData.role === 'student') {
-          return NextResponse.redirect(new URL('/dashboard', request.url));
-        }
-        if (userData.role === 'owner') {
-          return NextResponse.redirect(new URL('/owner', request.url));
-        }
-        return NextResponse.redirect(new URL('/login', request.url));
-      }
-
-      // Ensure session has a teacherId for data isolation
-      if (!userData.teacherId) {
-        // Invalid session — force re-login
-        const response = NextResponse.redirect(new URL('/login', request.url));
-        response.cookies.delete('user_session');
-        return response;
-      }
-    } catch {
-      return NextResponse.redirect(new URL('/login', request.url));
-    }
+  if (pathname.startsWith('/teacher') || pathname.startsWith('/admin')) {
+    if (!user) return redirectTo('/login');
+    if (role === 'student') return redirectTo('/dashboard');
+    if (role === 'owner') return redirectTo('/owner');
+    if (role !== 'teacher') return redirectTo('/login');
   }
 
-  // ─── Protect /dashboard (student role only) ──────────────────
   if (pathname.startsWith('/dashboard')) {
-    if (!session) {
-      return NextResponse.redirect(new URL('/login', request.url));
-    }
-
-    try {
-      const userData = JSON.parse(session.value);
-      if (userData.role !== 'student') {
-        if (userData.role === 'admin') {
-          return NextResponse.redirect(new URL('/teacher', request.url));
-        }
-        if (userData.role === 'owner') {
-          return NextResponse.redirect(new URL('/owner', request.url));
-        }
-        return NextResponse.redirect(new URL('/login', request.url));
-      }
-    } catch {
-      return NextResponse.redirect(new URL('/login', request.url));
-    }
+    if (!user) return redirectTo('/login');
+    if (role === 'teacher') return redirectTo('/teacher');
+    if (role === 'owner') return redirectTo('/owner');
+    if (role !== 'student') return redirectTo('/login');
   }
 
-  // ─── Redirect logged-in users away from public pages ─────────
-  if ((pathname === '/' || pathname === '/login' || pathname === '/join' || pathname === '/register-teacher') && session) {
-    try {
-      const userData = JSON.parse(session.value);
-      if (userData.role === 'owner') {
-        return NextResponse.redirect(new URL('/owner', request.url));
-      } else if (userData.role === 'admin') {
-        return NextResponse.redirect(new URL('/teacher', request.url));
-      } else if (userData.role === 'student') {
-        return NextResponse.redirect(new URL('/dashboard', request.url));
-      }
-    } catch {
-      // Ignore parse errors here
-    }
+  if (
+    (pathname === '/' || pathname === '/login' || pathname === '/join' || pathname === '/register-teacher') &&
+    user && role
+  ) {
+    if (role === 'owner') return redirectTo('/owner');
+    if (role === 'teacher') return redirectTo('/teacher');
+    if (role === 'student') return redirectTo('/dashboard');
   }
 
-  return NextResponse.next();
+  return supabaseResponse;
 }
 
-
 export const config = {
-  matcher: ['/', '/admin', '/admin/:path*', '/teacher/:path*', '/dashboard/:path*', '/login', '/join', '/register-teacher', '/owner', '/owner/:path*'],
+  matcher: ['/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)'],
 };

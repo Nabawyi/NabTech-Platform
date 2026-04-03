@@ -41,6 +41,7 @@ const formatWhatsAppUrl = (phone: string) => {
 
 export default function OwnerDashboard() {
   const [teachers, setTeachers] = useState<TeacherRecord[]>([]);
+  const [filter, setFilter] = useState<"pending" | "active" | "inactive" | "all">("pending");
   const [loading, setLoading] = useState(true);
   const [approvingId, setApprovingId] = useState<string | null>(null);
   const [rejectingId, setRejectingId] = useState<string | null>(null);
@@ -133,7 +134,8 @@ export default function OwnerDashboard() {
 
   const pendingTeachers = teachers.filter((t) => t.status === "pending");
   const activeTeachers = teachers.filter((t) => t.status === "active");
-  const inactiveTeachers = teachers.filter((t) => t.status === "inactive");
+  const inactiveTeachers = teachers.filter((t) => t.status === "inactive" || t.status === "rejected");
+  const displayedTeachers = filter === "all" ? teachers : teachers.filter((t) => t.status === filter);
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -182,7 +184,10 @@ export default function OwnerDashboard() {
     <div className="space-y-8 animate-in fade-in duration-500">
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <div className="bg-white p-6 rounded-3xl shadow-sm border border-gray-100 flex items-center gap-4">
+        <div 
+          onClick={() => setFilter("all")}
+          className={`bg-white p-6 rounded-3xl shadow-sm border ${filter === "all" ? "border-slate-800 ring-2 ring-slate-800/10" : "border-gray-100 hover:border-slate-300"} cursor-pointer flex items-center gap-4 transition-all`}
+        >
           <div className="w-14 h-14 rounded-2xl flex items-center justify-center bg-blue-50 text-blue-500">
             <Users className="w-7 h-7" />
           </div>
@@ -192,7 +197,10 @@ export default function OwnerDashboard() {
           </div>
         </div>
 
-        <div className="bg-white p-6 rounded-3xl shadow-sm border border-gray-100 flex items-center gap-4">
+        <div 
+          onClick={() => setFilter("pending")}
+          className={`bg-white p-6 rounded-3xl shadow-sm border ${filter === "pending" ? "border-amber-500 ring-2 ring-amber-500/10" : "border-gray-100 hover:border-amber-200"} cursor-pointer flex items-center gap-4 transition-all`}
+        >
           <div className="w-14 h-14 rounded-2xl flex items-center justify-center bg-amber-50 text-amber-600">
             <Clock className="w-7 h-7" />
           </div>
@@ -202,7 +210,10 @@ export default function OwnerDashboard() {
           </div>
         </div>
 
-        <div className="bg-white p-6 rounded-3xl shadow-sm border border-gray-100 flex items-center gap-4">
+        <div 
+          onClick={() => setFilter("active")}
+          className={`bg-white p-6 rounded-3xl shadow-sm border ${filter === "active" ? "border-emerald-500 ring-2 ring-emerald-500/10" : "border-gray-100 hover:border-emerald-200"} cursor-pointer flex items-center gap-4 transition-all`}
+        >
           <div className="w-14 h-14 rounded-2xl flex items-center justify-center bg-emerald-50 text-emerald-600">
             <UserCheck className="w-7 h-7" />
           </div>
@@ -212,7 +223,10 @@ export default function OwnerDashboard() {
           </div>
         </div>
 
-        <div className="bg-white p-6 rounded-3xl shadow-sm border border-gray-100 flex items-center gap-4">
+        <div 
+          onClick={() => setFilter("inactive")}
+          className={`bg-white p-6 rounded-3xl shadow-sm border ${filter === "inactive" ? "border-gray-500 ring-2 ring-gray-500/10" : "border-gray-100 hover:border-gray-300"} cursor-pointer flex items-center gap-4 transition-all`}
+        >
           <div className="w-14 h-14 rounded-2xl flex items-center justify-center bg-gray-50 text-gray-500">
             <Ban className="w-7 h-7" />
           </div>
@@ -250,7 +264,7 @@ export default function OwnerDashboard() {
             <h2 className="text-xl font-black text-slate-800">إدارة المعلمين</h2>
           </div>
           <span className="text-xs font-black text-gray-400 bg-gray-50 px-4 py-2 rounded-xl">
-            {teachers.length} معلم
+            {displayedTeachers.length} {filter === "pending" ? "طلبات" : "معلم"}
           </span>
         </div>
 
@@ -268,14 +282,14 @@ export default function OwnerDashboard() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50">
-              {teachers.length === 0 ? (
+              {displayedTeachers.length === 0 ? (
                 <tr>
                   <td colSpan={7} className="px-6 py-16 text-center text-gray-400 font-bold">
-                    لا يوجد معلمون مسجلون بعد
+                    {filter === "pending" ? "لا يوجد طلبات حالياً" : "لا يوجد معلمون مسجلون بعد"}
                   </td>
                 </tr>
               ) : (
-                teachers.map((teacher) => (
+                displayedTeachers.map((teacher) => (
                   <tr key={teacher.id} className="group hover:bg-slate-50/50 transition-all duration-300">
                     {/* Name */}
                     <td className="px-6 py-5">

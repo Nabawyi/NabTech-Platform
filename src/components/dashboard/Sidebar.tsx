@@ -25,7 +25,9 @@ export default function Sidebar() {
   return (
     <aside className="w-64 bg-white border-l border-gray-100 hidden md:flex flex-col h-full sticky top-0">
       <div className="p-6">
-        <Logo href="/dashboard" className="origin-right scale-75 xl:scale-90" />
+        <Link href="/dashboard">
+          <Logo className="origin-right scale-75 xl:scale-90" />
+        </Link>
       </div>
 
       <div className="flex-1 px-4 py-8 space-y-2">

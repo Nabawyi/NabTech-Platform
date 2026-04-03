@@ -16,7 +16,7 @@ import { useSettings } from "@/components/providers/SettingsProvider";
 type EditingGroup = GroupRecord & { locId: string };
 
 export default function GroupsPage() {
-  const { settings, enabledLevels, getEnabledGradesForLevel } = useSettings();
+  const { settings, enabledLevels, getEnabledGradeCodesForLevel, isGradeCodeEnabled } = useSettings();
   const teacherId = settings.id;
   
   const [locations, setLocations] = useState<LocationRecord[]>([]);
@@ -47,11 +47,7 @@ export default function GroupsPage() {
       // AND filter the groups list in each location to only show enabled ones.
       const filtered = data.map(loc => ({
         ...loc,
-        groups: loc.groups.filter(grp => {
-          const st = grp.stage as string || (grp as any).level as string || "";
-          const gr = grp.grade || 0;
-          return enabledLevels.some(l => l.id === st) && getEnabledGradesForLevel(st).includes(gr);
-        })
+        groups: loc.groups.filter(grp => isGradeCodeEnabled(grp.gradeCode))
       })).filter(loc => loc.groups.length > 0 || enabledLevels.length > 0); 
       // Note: we keep locations even if empty if any levels are enabled, so they can add groups.
       // But we filter the groups THEMSELVES at data level.
@@ -99,10 +95,10 @@ export default function GroupsPage() {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
     const name = formData.get("name") as string;
-    await addLocation(name, teacherId);
+    const newLoc = await addLocation(name, teacherId);
+    setLocations(prev => [...prev, newLoc]);
     setAddingLoc(false);
     showToast(`✅ تم إضافة السنتر "${name}" بنجاح`);
-    loadData();
   };
 
   const handleUpdateLocation = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -147,12 +143,14 @@ export default function GroupsPage() {
     }
 
     try {
+      const loc = locations.find((l) => l.id === addingGrp);
       await addGroup(addingGrp, {
         name,
         stage: groupStage,
         grade: groupGrade as number,
         startTime: groupStartTime,
         endTime: groupEndTime,
+        locationName: loc?.name,
       }, teacherId);
       setAddingGrp(null);
       setGroupStage("");
@@ -218,8 +216,8 @@ export default function GroupsPage() {
 
   const timeOptions = toTimeOptions(30);
   
-  // Filter valid grades by settings — only show enabled grades for the selected stage
-  const validGrades = groupStage ? getEnabledGradesForLevel(groupStage) : [];
+  const validGrades = groupStage ? EDUCATION_LEVELS.find(l => l.id === groupStage)?.grades.filter(g => settings.enabled_grade_codes.includes(g.code)) || [] : [];
+
 
   if (enabledLevels.length === 0 && !loading) {
     return (
@@ -498,14 +496,15 @@ export default function GroupsPage() {
                     className="w-full px-6 py-4 bg-gray-50 dark:bg-gray-700 rounded-2xl border border-gray-100 dark:border-gray-600 focus:border-primary focus:ring-4 focus:ring-primary/10 outline-none transition-all font-bold disabled:opacity-50 disabled:cursor-not-allowed dark:text-gray-100"
                   >
                     <option value="">
-                      {groupStage ? "اختر الصف" : "اختر المرحلة أولاً"}
+                    {groupStage ? "اختر الصف" : "اختر المرحلة أولاً"}
                     </option>
-                    {validGrades.map((n) => (
-                      <option key={n} value={n}>
-                        الصف {n}
+                    {validGrades.map((g) => (
+                      <option key={g.code} value={g.number}>
+                        الصف {g.number}
                       </option>
                     ))}
                   </select>
+
                 </div>
               </div>
 

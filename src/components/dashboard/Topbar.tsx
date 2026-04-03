@@ -5,7 +5,7 @@ import { Bell, Menu, Search } from "lucide-react";
 export type DashboardSession = {
   role: string;
   name?: string;
-  id?: number;
+  id?: string | number;
   grade?: string;
 };
 

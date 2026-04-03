@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { CheckCircle2, ArrowRight, MapPin, Clock, User, Phone, Key, GraduationCap, AlertCircle } from "lucide-react";
 import { addStudent } from "@/app/actions/students";
@@ -8,6 +8,7 @@ import { validateEgyptianPhone } from "@/lib/validation";
 import { getLocations } from "@/app/actions/locations";
 import { getTeacherByInviteCode, type TeacherSettings } from "@/app/actions/settings";
 import { EDUCATION_LEVELS, SchoolLevel, getGradeLabel } from "@/lib/constants";
+import { getGradeCode } from "@/lib/education";
 import { formatTimeTo12Hour } from "@/lib/time";
 import type { GroupRecord, LocationRecord } from "@/types/domain";
 
@@ -39,6 +40,18 @@ export default function JoinPage() {
   const [selectedLocation, setSelectedLocation] = useState<string>("");
   const [selectedGroup, setSelectedGroup] = useState<string>("");
 
+  // Use effect to fetch locations dynamically when level/grade changes
+  useEffect(() => {
+    if (teacher && selectedLevel && selectedGrade) {
+      const code = getGradeCode(selectedLevel, selectedGrade);
+      getLocations(teacher.id, code).then((locs) => {
+        setLocations(locs);
+        setSelectedLocation("");
+        setSelectedGroup("");
+      }).catch(console.error);
+    }
+  }, [teacher, selectedLevel, selectedGrade]);
+
   const handleValidateCode = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -69,11 +82,7 @@ export default function JoinPage() {
         return;
       }
 
-      // Fetch this specific teacher's locations
-      const teacherLocs = await getLocations(foundTeacher.id);
-      
       setTeacher(foundTeacher);
-      setLocations(teacherLocs);
       
       // Auto-set the first enabled level if any
       if (foundTeacher.enabled_levels.length > 0) {
@@ -81,6 +90,9 @@ export default function JoinPage() {
         setSelectedLevel(firstLevel);
         const firstGrade = foundTeacher.enabled_grades.find(g => [1,2,3,4,5,6].includes(g));
         if (firstGrade) setSelectedGrade(firstGrade);
+      } else {
+         // Even if none, we need to try to fetch
+         setLocations([]);
       }
 
       setStep(2);
@@ -99,6 +111,7 @@ export default function JoinPage() {
     try {
       await addStudent({
         teacherId: teacher.id,
+        inviteCode: inviteCode.trim().toUpperCase(),
         name,
         phone: phone.trim(),
         password,
@@ -146,7 +159,8 @@ export default function JoinPage() {
   const levelGrades = EDUCATION_LEVELS.find(l => l.id === selectedLevel)?.grades.filter(g => enabledGrades.includes(g.number)) || [];
   
   const currentLoc = locations.find(l => l.id === selectedLocation);
-  const availableGroups = currentLoc ? currentLoc.groups.filter(g => g.stage === selectedLevel && g.grade === selectedGrade) : [];
+  const selectedGradeCode = getGradeCode(selectedLevel, selectedGrade);
+  const availableGroups = currentLoc ? currentLoc.groups.filter(g => g.gradeCode === selectedGradeCode) : [];
 
   return (
     <div className="min-h-[calc(100vh-4rem)] flex items-center justify-center bg-gray-50/50 p-4 sm:p-8" dir="rtl">

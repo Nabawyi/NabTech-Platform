@@ -5,14 +5,11 @@ import { updateTeacherSettings } from "@/app/actions/settings";
 import { useState } from "react";
 import { Moon, Sun, Save, GraduationCap, Check, Loader2, CheckCircle } from "lucide-react";
 
-const STAGES = [
-  { id: "primary",     name: "المرحلة الابتدائية", grades: [1, 2, 3, 4, 5, 6] },
-  { id: "preparatory", name: "المرحلة الإعدادية",  grades: [1, 2, 3] },
-  { id: "secondary",   name: "المرحلة الثانوية",   grades: [1, 2, 3] },
-];
+import { EDUCATION_LEVELS, getGradeCode } from "@/lib/constants";
+
 
 export default function SettingsPage() {
-  const { settings, setSettings, toggleDarkMode, isGradeEnabled, isLevelEnabled } = useSettings();
+  const { settings, setSettings, toggleDarkMode, isGradeCodeEnabled, isLevelEnabled } = useSettings();
   const [isSaving, setIsSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -23,13 +20,22 @@ export default function SettingsPage() {
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const handleToggleGrade = (gradeNum: number) => {
-    const current = [...settings.enabled_grades];
-    const next = current.includes(gradeNum)
-      ? current.filter((g) => g !== gradeNum)
-      : [...current, gradeNum];
-    setSettings({ ...settings, enabled_grades: next });
+  const handleToggleGrade = (stageId: string, gradeNum: number) => {
+    const code = getGradeCode(stageId as any, gradeNum);
+    const current = [...settings.enabled_grade_codes];
+    const next = current.includes(code)
+      ? current.filter((c) => c !== code)
+      : [...current, code];
+    
+    // Also keep enabled_grades in sync for legacy compatibility if needed
+    const currentGrades = [...settings.enabled_grades];
+    const nextGrades = currentGrades.includes(gradeNum) && !next.some(c => c.endsWith(`_${gradeNum}`))
+      ? currentGrades.filter(g => g !== gradeNum)
+      : [...new Set([...currentGrades, gradeNum])];
+
+    setSettings({ ...settings, enabled_grade_codes: next, enabled_grades: nextGrades });
   };
+
 
   const handleToggleLevel = (stageId: string) => {
     const current = [...settings.enabled_levels];
@@ -48,6 +54,7 @@ export default function SettingsPage() {
         dark_mode: settings.dark_mode,
         enabled_levels: settings.enabled_levels,
         enabled_grades: settings.enabled_grades,
+        enabled_grade_codes: settings.enabled_grade_codes,
       });
       setSaved(true);
       setTimeout(() => setSaved(false), 2000);
@@ -166,7 +173,7 @@ export default function SettingsPage() {
         </div>
 
         <div className="space-y-4">
-          {STAGES.map((stage) => {
+          {EDUCATION_LEVELS.map((stage) => {
             const levelOn = isLevelEnabled(stage.id);
             return (
               <div
@@ -192,7 +199,7 @@ export default function SettingsPage() {
                     </div>
                   </div>
                   <span className="text-lg font-bold text-foreground group-hover:text-primary transition-colors">
-                    {stage.name}
+                    {stage.nameAr}
                   </span>
                 </label>
 
@@ -200,11 +207,11 @@ export default function SettingsPage() {
                 {levelOn && (
                   <div className="flex flex-wrap gap-2 mt-4 pr-9 animate-in slide-in-from-top-2 duration-300">
                     {stage.grades.map((grade) => {
-                      const on = isGradeEnabled(stage.id, grade);
+                      const on = isGradeCodeEnabled(grade.code);
                       return (
                         <button
-                          key={grade}
-                          onClick={() => handleToggleGrade(grade)}
+                          key={grade.code}
+                          onClick={() => handleToggleGrade(stage.id, grade.number)}
                           className={`
                             flex items-center gap-1.5 px-4 py-2 rounded-lg border text-sm font-bold
                             transition-all hover:-translate-y-0.5 active:scale-95
@@ -214,7 +221,7 @@ export default function SettingsPage() {
                           `}
                         >
                           {on && <Check className="w-3.5 h-3.5" />}
-                          الصف {grade}
+                          الصف {grade.number}
                         </button>
                       );
                     })}

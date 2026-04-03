@@ -31,8 +31,8 @@ export type DashboardStats = {
   attendance: AttendanceInsights;
   subscription: SubscriptionInsights;
   alerts: {
-    expiredStudents: Array<{ id: number; name: string }>;
-    inactiveStudents: Array<{ id: number; name: string }>;
+    expiredStudents: Array<{ id: string; name: string }>;
+    inactiveStudents: Array<{ id: string; name: string }>;
     emptyGroupIds: string[];
   };
 };

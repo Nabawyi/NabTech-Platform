@@ -2,10 +2,14 @@ import {
   EDUCATION_LEVELS,
   type SchoolLevel,
   getGradeLabel,
+  getGradeCode,
 } from "@/lib/constants";
+
+export { getGradeCode };
 
 /** Canonical domain name for education tier (matches API / DB field `stage`). */
 export type Stage = SchoolLevel;
+
 
 const STAGES: Stage[] = ["primary", "preparatory", "secondary"];
 
@@ -43,6 +47,17 @@ export function normalizeStageGrade(
   return { stage, grade: g };
 }
 
+export function parseGradeCode(code: string): { stage: Stage; grade: number } | null {
+  const parts = code.split("_");
+  if (parts.length !== 2) return null;
+  const stageMap: Record<string, Stage> = { pri: "primary", pre: "preparatory", sec: "secondary" };
+  const stage = stageMap[parts[0]];
+  const grade = parseInt(parts[1], 10);
+  if (!stage || isNaN(grade) || !isValidStageGrade(stage, grade)) return null;
+  return { stage, grade };
+}
+
+
 /**
  * Infer stage + grade from legacy Arabic `grade` string (e.g. "الثالث الثانوي").
  */
@@ -74,6 +89,7 @@ export type NormalizedStudentFields = {
   grade: number | null;
   level: Stage | null;
   gradeNumber: number | null;
+  gradeCode: string;
   /** Display label; empty when stage/grade unknown */
   gradeLabel: string;
 };
@@ -118,6 +134,7 @@ export function normalizeStudentRecord(
       grade: gradeNum,
       level: stage,
       gradeNumber: gradeNum,
+      gradeCode: getGradeCode(stage, gradeNum),
       gradeLabel,
     };
   }
@@ -128,6 +145,7 @@ export function normalizeStudentRecord(
     grade: null,
     level: null,
     gradeNumber: null,
+    gradeCode: "",
     gradeLabel: "",
   };
 }

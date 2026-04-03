@@ -1,18 +1,14 @@
 "use server";
 
-import fs from "fs";
-import path from "path";
-import { cookies } from "next/headers";
+import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { validateEgyptianPhone } from "@/lib/validation";
-
-// ─── Types ───────────────────────────────────────────────────────────────────
 
 export type TeacherRecord = {
   id: string;
   name: string;
   email: string;
   phone: string;
-  password: string;
   status: "active" | "pending" | "rejected" | "inactive";
   invite_code: string | null;
   created_at: string;
@@ -26,81 +22,97 @@ export type RegisterTeacherPayload = {
   password: string;
 };
 
-// ─── File I/O ────────────────────────────────────────────────────────────────
-
-const dataDir = path.join(process.cwd(), "data");
-const teachersFile = path.join(dataDir, "teachers.json");
-
-function readTeachers(): TeacherRecord[] {
-  if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir, { recursive: true });
-  if (!fs.existsSync(teachersFile)) {
-    fs.writeFileSync(teachersFile, "[]");
-    return [];
-  }
-  try {
-    return JSON.parse(fs.readFileSync(teachersFile, "utf-8"));
-  } catch {
-    return [];
-  }
-}
-
-function writeTeachers(data: TeacherRecord[]) {
-  if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir, { recursive: true });
-  fs.writeFileSync(teachersFile, JSON.stringify(data, null, 2));
-}
-
-// ─── Invite Code Generation ─────────────────────────────────────────────────
+// ─── Generate unique invite code ─────────────────────────────────────────────
 
 async function generateUniqueInviteCode(): Promise<string> {
-  const teachers = readTeachers();
-  const existingCodes = new Set(
-    teachers.map((t) => t.invite_code).filter(Boolean)
-  );
-
+  const supabase = await createClient();
+  const { data: teachers } = await supabase.from("teachers").select("invite_code");
+  const existingCodes = new Set((teachers ?? []).map((t: any) => t.invite_code).filter(Boolean));
   let code: string;
   let attempts = 0;
-  const MAX_ATTEMPTS = 100;
-
   do {
-    if (attempts < MAX_ATTEMPTS) {
-      const num = Math.floor(Math.random() * 900) + 100;
-      code = `NAB${num}`;
-    } else {
-      const bigNum = Math.floor(Math.random() * 90000) + 10000;
-      code = `NAB${bigNum}`;
-    }
+    const num = attempts < 100 ? Math.floor(Math.random() * 900) + 100 : Math.floor(Math.random() * 90000) + 10000;
+    code = `NAB${num}`;
     attempts++;
   } while (existingCodes.has(code));
-
   return code;
 }
 
-// ─── CRUD Operations ─────────────────────────────────────────────────────────
+// ─── Get all teachers (owner only) ───────────────────────────────────────────
 
 export async function getTeachers(): Promise<TeacherRecord[]> {
-  return readTeachers();
+  const admin = createAdminClient();
+
+  // Fetch teacher rows (service_role bypasses RLS)
+  const { data, error } = await admin
+    .from("teachers")
+    .select("*, profiles(name, email, phone)")
+    .order("created_at", { ascending: false });
+
+  if (error) throw new Error(error.message);
+  if (!data || data.length === 0) return [];
+
+  // Fetch auth users to get emails as a reliable fallback
+  // (in case profiles.email column doesn't exist yet)
+  let authEmailMap: Record<string, string> = {};
+  try {
+    const { data: { users } } = await admin.auth.admin.listUsers({ perPage: 1000 });
+    if (users) {
+      authEmailMap = Object.fromEntries(users.map((u) => [u.id, u.email ?? ""]));
+    }
+  } catch {
+    // Non-fatal: we'll fall back to profiles.email
+  }
+
+  return data.map((t: any) => ({
+    id: t.id,
+    name: t.profiles?.name ?? "",
+    email: t.profiles?.email ?? authEmailMap[t.id] ?? "",
+    phone: t.profiles?.phone ?? "",
+    status: t.status,
+    invite_code: t.invite_code,
+    created_at: t.created_at,
+    approved_at: t.approved_at,
+  }));
 }
 
 export async function getPendingTeachers(): Promise<TeacherRecord[]> {
-  return readTeachers().filter((t) => t.status === "pending");
+  const all = await getTeachers();
+  return all.filter((t) => t.status === "pending");
 }
 
 export async function getTeacherById(id: string): Promise<TeacherRecord | null> {
-  return readTeachers().find((t) => t.id === id) ?? null;
+  const all = await getTeachers();
+  return all.find((t) => t.id === id) ?? null;
 }
 
 export async function getTeacherByInviteCode(code: string): Promise<TeacherRecord | null> {
-  return (
-    readTeachers().find(
-      (t) =>
-        t.invite_code &&
-        t.invite_code.toUpperCase() === code.toUpperCase() &&
-        t.status === "active"
-    ) ?? null
-  );
+  const normalizedCode = (code || "").trim().toUpperCase();
+  if (!normalizedCode) return null;
+
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("teachers")
+    .select("*, profiles(name, email, phone)")
+    .eq("invite_code", normalizedCode)
+    .eq("status", "active")
+    .maybeSingle();
+
+  if (error || !data) return null;
+
+  return {
+    id: data.id,
+    name: (data as any).profiles?.name ?? "",
+    email: (data as any).profiles?.email ?? "",
+    phone: (data as any).profiles?.phone ?? "",
+    status: data.status,
+    invite_code: data.invite_code,
+    created_at: data.created_at,
+    approved_at: data.approved_at,
+  };
 }
 
-// ─── Registration ────────────────────────────────────────────────────────────
+// ─── Register (teacher self-registers, status=pending) ───────────────────────
 
 export async function registerTeacher(
   payload: RegisterTeacherPayload
@@ -112,267 +124,157 @@ export async function registerTeacher(
   if (!password.trim()) return { success: false, error: "كلمة المرور مطلوبة" };
 
   const phoneCheck = validateEgyptianPhone(phone, "رقم الهاتف");
-  if (!phoneCheck.valid) {
-    return { success: false, error: phoneCheck.error ?? "رقم الهاتف غير صالح" };
-  }
+  if (!phoneCheck.valid) return { success: false, error: phoneCheck.error ?? "رقم الهاتف غير صالح" };
 
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  if (!emailRegex.test(email.trim())) {
-    return { success: false, error: "صيغة البريد الإلكتروني غير صحيحة" };
+  if (!emailRegex.test(email.trim())) return { success: false, error: "صيغة البريد الإلكتروني غير صحيحة" };
+
+  const admin = createAdminClient();
+
+  // Create auth user
+  const { data: authData, error: authError } = await admin.auth.admin.createUser({
+    email: email.trim().toLowerCase(),
+    password,
+    email_confirm: true,
+  });
+  if (authError) {
+    if (authError.message.includes("already")) return { success: false, error: "البريد الإلكتروني مسجل مسبقاً" };
+    return { success: false, error: authError.message };
   }
 
-  const teachers = readTeachers();
+  const userId = authData.user.id;
 
-  if (teachers.find((t) => t.email.toLowerCase() === email.trim().toLowerCase())) {
-    return { success: false, error: "البريد الإلكتروني مسجل مسبقاً" };
-  }
-
-  if (teachers.find((t) => t.phone === phone.trim())) {
-    return { success: false, error: "رقم الهاتف مسجل مسبقاً" };
-  }
-
-  const newId = `teacher_${Date.now()}`;
-
-  const newTeacher: TeacherRecord = {
-    id: newId,
+  // Insert profile — try with email first, fall back without if column missing
+  let profileError: any = null;
+  const profileWithEmail = await admin.from("profiles").insert({
+    id: userId,
     name: name.trim(),
     email: email.trim().toLowerCase(),
+    role: "teacher",
     phone: phone.trim(),
-    password: password,
+  });
+  profileError = profileWithEmail.error;
+
+  if (profileError && profileError.message?.includes("email")) {
+    // Column likely doesn't exist yet — insert without it
+    const profileWithoutEmail = await admin.from("profiles").insert({
+      id: userId,
+      name: name.trim(),
+      role: "teacher",
+      phone: phone.trim(),
+    });
+    profileError = profileWithoutEmail.error;
+  }
+
+  if (profileError) {
+    await admin.auth.admin.deleteUser(userId);
+    return { success: false, error: profileError.message };
+  }
+
+  // Insert teacher row (pending)
+  const { error: teacherError } = await admin.from("teachers").insert({
+    id: userId,
     status: "pending",
     invite_code: null,
-    created_at: new Date().toISOString(),
-    approved_at: null,
-  };
-
-  teachers.push(newTeacher);
-  writeTeachers(teachers);
+  });
+  if (teacherError) {
+    await admin.auth.admin.deleteUser(userId);
+    return { success: false, error: teacherError.message };
+  }
 
   return { success: true };
 }
 
-// ─── Approval Flow ───────────────────────────────────────────────────────────
+// ─── Approve teacher (owner grants invite code) ───────────────────────────────
 
 export async function approveTeacher(
   id: string
 ): Promise<{ success: boolean; invite_code?: string; error?: string }> {
-  const teachers = readTeachers();
-  const index = teachers.findIndex((t) => t.id === id);
+  const admin = createAdminClient();
 
-  if (index === -1) return { success: false, error: "المعلم غير موجود" };
-  if (teachers[index].status === "active") {
-    return {
-      success: true,
-      invite_code: teachers[index].invite_code ?? undefined,
-    };
-  }
+  const { data: existing } = await admin.from("teachers").select("status, invite_code").eq("id", id).single();
+  if (!existing) return { success: false, error: "المعلم غير موجود" };
+  if (existing.status === "active") return { success: true, invite_code: existing.invite_code ?? undefined };
 
-  // Generate new invite code only if teacher doesn't have one
-  const invite_code = teachers[index].invite_code || (await generateUniqueInviteCode());
+  const invite_code = existing.invite_code || (await generateUniqueInviteCode());
 
-  teachers[index].status = "active";
-  teachers[index].invite_code = invite_code;
-  teachers[index].approved_at = new Date().toISOString();
+  const { error } = await admin
+    .from("teachers")
+    .update({ status: "active", invite_code, approved_at: new Date().toISOString() })
+    .eq("id", id);
+  if (error) return { success: false, error: error.message };
 
-  writeTeachers(teachers);
-
-  // Create per-teacher settings file if needed
-  const perTeacherSettings = path.join(dataDir, `teacher_settings_${id}.json`);
-  if (!fs.existsSync(perTeacherSettings)) {
-    const defaultSettings = {
-      id: id,
-      name: teachers[index].name,
-      inviteCode: invite_code,
-      dark_mode: false,
-      enabled_levels: ["primary", "preparatory", "secondary"],
-      enabled_grades: [1, 2, 3, 4, 5, 6],
-    };
-    fs.writeFileSync(perTeacherSettings, JSON.stringify(defaultSettings, null, 2));
-  }
+  // Seed default settings
+  await admin
+    .from("teacher_settings")
+    .upsert({ teacher_id: id, dark_mode: false, enabled_levels: ["primary","preparatory","secondary"], enabled_grades: [1,2,3,4,5,6] });
 
   return { success: true, invite_code };
 }
 
-export async function rejectTeacher(
-  id: string
-): Promise<{ success: boolean; error?: string }> {
-  const teachers = readTeachers();
-  const index = teachers.findIndex((t) => t.id === id);
-
-  if (index === -1) return { success: false, error: "المعلم غير موجود" };
-
-  teachers[index].status = "rejected";
-  writeTeachers(teachers);
-
+export async function rejectTeacher(id: string): Promise<{ success: boolean; error?: string }> {
+  const admin = createAdminClient();
+  const { error } = await admin.from("teachers").update({ status: "rejected" }).eq("id", id);
+  if (error) return { success: false, error: error.message };
   return { success: true };
 }
 
-// ─── Deactivate Teacher ──────────────────────────────────────────────────────
-
-/**
- * Deactivate a teacher: sets status = "inactive".
- * Teacher cannot login. If already logged in, session will fail on next request.
- */
-export async function deactivateTeacher(
-  id: string
-): Promise<{ success: boolean; error?: string }> {
-  const teachers = readTeachers();
-  const index = teachers.findIndex((t) => t.id === id);
-
-  if (index === -1) return { success: false, error: "المعلم غير موجود" };
-
-  teachers[index].status = "inactive";
-  writeTeachers(teachers);
-
+export async function deactivateTeacher(id: string): Promise<{ success: boolean; error?: string }> {
+  const admin = createAdminClient();
+  const { error } = await admin.from("teachers").update({ status: "inactive" }).eq("id", id);
+  if (error) return { success: false, error: error.message };
   return { success: true };
 }
 
-// ─── Delete Teacher (with cascade) ───────────────────────────────────────────
-
-/**
- * Permanently delete a teacher and ALL their related data:
- * - students
- * - attendance records
- * - subscriptions
- * - lessons
- * - quiz results
- * - teacher settings file
- * - locations/groups
- */
-export async function deleteTeacher(
-  id: string
-): Promise<{ success: boolean; error?: string }> {
-  const teachers = readTeachers();
-  const index = teachers.findIndex((t) => t.id === id);
-
-  if (index === -1) return { success: false, error: "المعلم غير موجود" };
-
-  // Remove from teachers list
-  teachers.splice(index, 1);
-  writeTeachers(teachers);
-
-  // ── Cascade delete all related data ──
-
-  // 1. Delete students belonging to this teacher
-  const studentsFile = path.join(dataDir, "students.json");
-  if (fs.existsSync(studentsFile)) {
-    try {
-      const students = JSON.parse(fs.readFileSync(studentsFile, "utf-8")) as Record<string, unknown>[];
-      const deletedStudentIds = new Set(
-        students.filter((s) => String(s.teacherId) === id).map((s) => Number(s.id))
-      );
-      const remaining = students.filter((s) => String(s.teacherId) !== id);
-      fs.writeFileSync(studentsFile, JSON.stringify(remaining, null, 2));
-
-      // 2. Delete attendance records for those students
-      const attendanceFile = path.join(dataDir, "attendance.json");
-      if (fs.existsSync(attendanceFile)) {
-        try {
-          const data = JSON.parse(fs.readFileSync(attendanceFile, "utf-8")) as Record<string, unknown>[];
-          const filtered = data.filter(
-            (r) => String(r.teacherId) !== id && !deletedStudentIds.has(Number(r.studentId))
-          );
-          fs.writeFileSync(attendanceFile, JSON.stringify(filtered, null, 2));
-        } catch {}
-      }
-
-      // 3. Delete subscriptions for those students
-      const subsFile = path.join(dataDir, "subscriptions.json");
-      if (fs.existsSync(subsFile)) {
-        try {
-          const data = JSON.parse(fs.readFileSync(subsFile, "utf-8")) as Record<string, unknown>[];
-          const filtered = data.filter((r) => !deletedStudentIds.has(Number(r.studentId)));
-          fs.writeFileSync(subsFile, JSON.stringify(filtered, null, 2));
-        } catch {}
-      }
-
-      // 4. Delete quiz results for those students
-      const quizFile = path.join(dataDir, "quiz_results.json");
-      if (fs.existsSync(quizFile)) {
-        try {
-          const data = JSON.parse(fs.readFileSync(quizFile, "utf-8")) as Record<string, unknown>[];
-          const filtered = data.filter((r) => !deletedStudentIds.has(Number(r.studentId)));
-          fs.writeFileSync(quizFile, JSON.stringify(filtered, null, 2));
-        } catch {}
-      }
-    } catch {}
-  }
-
-  // 5. Delete lessons for this teacher
-  const lessonsFile = path.join(dataDir, "lessons.json");
-  if (fs.existsSync(lessonsFile)) {
-    try {
-      const data = JSON.parse(fs.readFileSync(lessonsFile, "utf-8")) as Record<string, unknown>[];
-      const filtered = data.filter((r) => String(r.teacherId) !== id);
-      fs.writeFileSync(lessonsFile, JSON.stringify(filtered, null, 2));
-    } catch {}
-  }
-
-  // 6. Delete locations/groups for this teacher
-  const locationsFile = path.join(dataDir, "locations.json");
-  if (fs.existsSync(locationsFile)) {
-    try {
-      const data = JSON.parse(fs.readFileSync(locationsFile, "utf-8")) as Record<string, unknown>[];
-      const filtered = data.filter((r) => String(r.teacherId) !== id);
-      fs.writeFileSync(locationsFile, JSON.stringify(filtered, null, 2));
-    } catch {}
-  }
-
-  // 7. Delete teacher settings file
-  const settingsFile = path.join(dataDir, `teacher_settings_${id}.json`);
-  if (fs.existsSync(settingsFile)) {
-    fs.unlinkSync(settingsFile);
-  }
-
+export async function deleteTeacher(id: string): Promise<{ success: boolean; error?: string }> {
+  const admin = createAdminClient();
+  // Cascade is handled by FK ON DELETE CASCADE in the schema
+  const { error } = await admin.auth.admin.deleteUser(id);
+  if (error) return { success: false, error: error.message };
   return { success: true };
 }
 
-// ─── Teacher Login ───────────────────────────────────────────────────────────
+// ─── Login ────────────────────────────────────────────────────────────────────
 
 export async function loginTeacher(
   email: string,
   password: string
 ): Promise<{ success?: boolean; error?: string; role?: string }> {
-  const teachers = readTeachers();
-  const teacher = teachers.find(
-    (t) =>
-      t.email.toLowerCase() === email.trim().toLowerCase() &&
-      t.password === password
-  );
+  const supabase = await createClient();
 
-  if (!teacher) {
-    return { error: "البريد الإلكتروني أو كلمة المرور غير صحيحة" };
-  }
+  const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+  if (error) return { error: "البريد الإلكتروني أو كلمة المرور غير صحيحة" };
 
-  if (teacher.status === "pending") {
-    return { error: "حسابك قيد المراجعة. سيتم إشعارك عند الموافقة." };
-  }
+  // Fetch profile to check role & teacher status
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("role")
+    .eq("id", data.user.id)
+    .single();
 
-  if (teacher.status === "rejected") {
-    return { error: "تم رفض طلبك. يرجى التواصل مع الإدارة." };
-  }
+  if (profile?.role === "owner") return { success: true, role: "owner" };
 
-  if (teacher.status === "inactive") {
-    return { error: "تم إيقاف حسابك. يرجى التواصل مع الإدارة." };
-  }
+  if (profile?.role === "teacher") {
+    const { data: teacher } = await supabase
+      .from("teachers")
+      .select("status")
+      .eq("id", data.user.id)
+      .single();
 
-  // status === "active" → allow login
-  const cookieStore = await cookies();
-  cookieStore.set(
-    "user_session",
-    JSON.stringify({
-      role: "admin",
-      teacherId: teacher.id,
-      name: teacher.name,
-      email: teacher.email,
-    }),
-    {
-      path: "/",
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      maxAge: 60 * 60 * 24 * 7,
+    if (teacher?.status === "pending") {
+      await supabase.auth.signOut();
+      return { error: "حسابك قيد المراجعة. سيتم إشعارك عند الموافقة." };
     }
-  );
+    if (teacher?.status === "rejected") {
+      await supabase.auth.signOut();
+      return { error: "تم رفض طلبك. يرجى التواصل مع الإدارة." };
+    }
+    if (teacher?.status === "inactive") {
+      await supabase.auth.signOut();
+      return { error: "تم إيقاف حسابك. يرجى التواصل مع الإدارة." };
+    }
+    return { success: true, role: "teacher" };
+  }
 
-  return { success: true, role: "admin" };
+  return { error: "غير مصرح بتسجيل الدخول" };
 }

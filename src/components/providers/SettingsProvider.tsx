@@ -9,9 +9,11 @@ type SettingsContextType = {
   setSettings: (settings: TeacherSettings) => void;
   toggleDarkMode: () => void;
   isGradeEnabled: (stage: string, grade: number) => boolean;
+  isGradeCodeEnabled: (code: string) => boolean;
   isLevelEnabled: (stage: string) => boolean;
   enabledLevels: EducationLevel[];
   getEnabledGradesForLevel: (levelId: string) => number[];
+  getEnabledGradeCodesForLevel: (levelId: string) => string[];
 };
 
 const SettingsContext = createContext<SettingsContextType | null>(null);
@@ -87,6 +89,10 @@ export function SettingsProvider({
     settings.enabled_levels.includes(stage as any) &&
     settings.enabled_grades.includes(grade);
 
+  const isGradeCodeEnabled = (code: string) =>
+    settings.enabled_grade_codes.includes(code);
+
+
   const isLevelEnabled = (stage: string) =>
     settings.enabled_levels.includes(stage as any);
 
@@ -101,6 +107,13 @@ export function SettingsProvider({
     return level.grades.map((g) => g.number).filter((n) => settings.enabled_grades.includes(n));
   };
 
+  const getEnabledGradeCodesForLevel = (levelId: string) => {
+    const level = EDUCATION_LEVELS.find((l) => l.id === levelId);
+    if (!level) return [];
+    return level.grades.map((g) => g.code).filter((c) => settings.enabled_grade_codes.includes(c));
+  };
+
+
   return (
     <SettingsContext.Provider
       value={{
@@ -108,9 +121,11 @@ export function SettingsProvider({
         setSettings,
         toggleDarkMode,
         isGradeEnabled,
+        isGradeCodeEnabled,
         isLevelEnabled,
         enabledLevels,
         getEnabledGradesForLevel,
+        getEnabledGradeCodesForLevel,
       }}
     >
       {children}

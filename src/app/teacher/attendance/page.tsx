@@ -24,12 +24,12 @@ export default function AttendancePage() {
   const [groupFilter, setGroupFilter] = useState('all');
   const [stageFilter, setStageFilter] = useState<'all' | SchoolLevel>('all');
   const [gradeFilter, setGradeFilter] = useState<string>('all');
-  const [saving, setSaving] = useState<number | null>(null);
+  const [saving, setSaving] = useState<string | null>(null);
   
   // Bulk Mode States
   const [mode, setMode] = useState<'individual' | 'bulk'>('individual');
   const [bulkIds, setBulkIds] = useState("");
-  const [bulkResult, setBulkResult] = useState<{ present: number, invalid: number[] } | null>(null);
+  const [bulkResult, setBulkResult] = useState<{ present: number, invalid: string[] } | null>(null);
 
   const loadData = async () => {
     try {
@@ -61,7 +61,7 @@ export default function AttendancePage() {
     });
   }, [stageFilter]);
 
-  const handleMarkAttendance = async (studentId: number, status: 'present' | 'absent') => {
+  const handleMarkAttendance = async (studentId: string, status: 'present' | 'absent') => {
     setSaving(studentId);
     try {
       await markAttendance(studentId, date, status, teacherId);
@@ -75,7 +75,7 @@ export default function AttendancePage() {
         return [
           ...prev,
           {
-            id: Date.now(),
+            id: Date.now().toString(),
             studentId,
             teacherId,
             date,
@@ -95,7 +95,7 @@ export default function AttendancePage() {
     if (!bulkIds.trim()) return;
     setLoading(true);
     try {
-      const ids = bulkIds.split(/[\n, ]+/).map(id => parseInt(id.trim())).filter(id => !isNaN(id));
+      const ids = bulkIds.split(/[\n, ]+/).map(id => id.trim()).filter(id => id.length > 0);
       const res = await bulkMarkAttendance(ids, date, teacherId);
       setBulkResult({ present: res.present, invalid: res.invalid });
       await loadData();
@@ -107,7 +107,7 @@ export default function AttendancePage() {
     }
   };
 
-  const getStudentStatus = (studentId: number) => {
+  const getStudentStatus = (studentId: string) => {
     return attendance.find(r => r.studentId === studentId)?.status;
   };
 

@@ -37,7 +37,7 @@ function SubscriptionsContent() {
   
   const [confirmModal, setConfirmModal] = useState<{
     show: boolean;
-    studentId: number | null;
+    studentId: string | null;
     studentName: string;
     action: "activate" | "renew" | "deactivate" | null;
   }>({ show: false, studentId: null, studentName: "", action: null });
@@ -78,11 +78,23 @@ function SubscriptionsContent() {
     if (!confirmModal.studentId || !confirmModal.action) return;
     setActioning(true);
     try {
-      if (confirmModal.action === "activate")   await activateSubscription(confirmModal.studentId);
-      if (confirmModal.action === "renew")      await renewSubscription(confirmModal.studentId);
-      if (confirmModal.action === "deactivate") await deactivateSubscription(confirmModal.studentId);
-      setConfirmModal({ show: false, studentId: null, studentName: "", action: null });
-      fetchData();
+      let result;
+      // Convert studentId to string if necessary (Supabase IDs are usually UUID strings)
+      const sid = String(confirmModal.studentId);
+      
+      if (confirmModal.action === "activate")   result = await activateSubscription(sid);
+      else if (confirmModal.action === "renew") result = await renewSubscription(sid);
+      else if (confirmModal.action === "deactivate") result = await deactivateSubscription(sid);
+      
+      if (result?.success) {
+        setConfirmModal({ show: false, studentId: null, studentName: "", action: null });
+        await fetchData(); // Refresh local state
+      } else {
+        alert("حدث خطأ أثناء تنفيذ الإجراء. يرجى المحاولة مرة أخرى.");
+      }
+    } catch (error: any) {
+      console.error("Subscription Action Error:", error);
+      alert(error.message || "فشلت العملية. تحقق من اتصالك أو الصلاحيات.");
     } finally {
       setActioning(false);
     }
@@ -288,7 +300,7 @@ function SubscriptionsContent() {
                       <div className="flex items-center justify-center gap-2">
                         {(student.calculatedStatus === "inactive" || student.calculatedStatus === "expired") && (
                           <ActionBtn
-                            onClick={() => setConfirmModal({ show: true, studentId: student.id, studentName: String(student.name ?? ""), action: "activate" })}
+                            onClick={() => setConfirmModal({ show: true, studentId: String(student.id), studentName: String(student.name ?? ""), action: "activate" })}
                             title="تفعيل"
                             className="bg-success text-success-fg hover:bg-success-fg hover:text-card"
                           >
@@ -298,14 +310,14 @@ function SubscriptionsContent() {
                         {(student.calculatedStatus === "active" || student.calculatedStatus === "expiring_soon") && (
                           <>
                             <ActionBtn
-                              onClick={() => setConfirmModal({ show: true, studentId: student.id, studentName: String(student.name ?? ""), action: "renew" })}
+                              onClick={() => setConfirmModal({ show: true, studentId: String(student.id), studentName: String(student.name ?? ""), action: "renew" })}
                               title="تجديد"
                               className="bg-primary/10 text-primary hover:bg-primary hover:text-white"
                             >
                               <RefreshCcw className="w-4 h-4" />
                             </ActionBtn>
                             <ActionBtn
-                              onClick={() => setConfirmModal({ show: true, studentId: student.id, studentName: String(student.name ?? ""), action: "deactivate" })}
+                              onClick={() => setConfirmModal({ show: true, studentId: String(student.id), studentName: String(student.name ?? ""), action: "deactivate" })}
                               title="إلغاء"
                               className="bg-danger text-danger-fg hover:bg-danger-fg hover:text-card"
                             >

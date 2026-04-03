@@ -5,7 +5,7 @@ export type SubscriptionStatus =
   | "expiring_soon";
 
 export type Subscription = {
-  studentId: number;
+  studentId: string;
   startDate: string;
   endDate: string;
   status: "active" | "inactive";
@@ -13,8 +13,8 @@ export type Subscription = {
 };
 
 export type AttendanceRecord = {
-  id: number;
-  studentId: number;
+  id: string;
+  studentId: string;
   date: string;
   status: "present" | "absent";
   teacherId: string;
@@ -27,6 +27,7 @@ export type GroupRecord = {
   name: string;
   stage?: "primary" | "preparatory" | "secondary";
   grade?: number;
+  gradeCode: string;
   startTime: string;
   endTime: string;
   teacherId: string;
@@ -40,7 +41,7 @@ export type LocationRecord = {
 };
 
 export type StudentJsonRow = {
-  id: number;
+  id: string;
   teacherId: string;
   locationId?: string;
   groupId?: string;
@@ -53,6 +54,7 @@ export type StudentJsonRow = {
 /** Join form / API payload (values often come from FormData). */
 export type AddStudentPayload = {
   teacherId: string;
+  inviteCode?: string;
   name: unknown;
   phone: unknown;
   parentPhone: unknown;
@@ -68,7 +70,7 @@ export type AddStudentPayload = {
 
 /** Normalized student row from getStudents / getSubscriptions */
 export type StudentRow = Record<string, unknown> & {
-  id: number;
+  id: string;
   teacherId: string;
   phone?: string;
   parentPhone?: string;
@@ -94,4 +96,5 @@ export type GroupFormPayload = {
   grade?: number;
   startTime: string;
   endTime: string;
+  locationName?: string;
 };

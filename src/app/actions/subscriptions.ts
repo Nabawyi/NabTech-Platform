@@ -1,58 +1,44 @@
 "use server";
 
-import fs from "fs";
-import path from "path";
+import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import type { Subscription, SubscriptionRow, SubscriptionStatus } from "@/types/domain";
-import { getStudents } from "./students";
-
-const dataDir = path.join(process.cwd(), "data");
-const subsFile = path.join(dataDir, "subscriptions.json");
+import { getStudents, getUserSession } from "./students";
+import { revalidatePath } from "next/cache";
 
 export type { Subscription, SubscriptionStatus } from "@/types/domain";
-
-function initSubs() {
-  if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir, { recursive: true });
-  if (!fs.existsSync(subsFile)) fs.writeFileSync(subsFile, "[]");
-}
-
-function readSubs(): Subscription[] {
-  initSubs();
-  return JSON.parse(fs.readFileSync(subsFile, "utf-8"));
-}
-
-function writeSubs(subs: Subscription[]) {
-  fs.writeFileSync(subsFile, JSON.stringify(subs, null, 2));
-}
 
 function getLastDayOfMonth(date: Date): Date {
   return new Date(date.getFullYear(), date.getMonth() + 1, 0, 23, 59, 59);
 }
 
 export async function getSubscriptions(teacherId?: string): Promise<SubscriptionRow[]> {
-  const subs = readSubs();
   const students = await getStudents(teacherId);
-  
+  const supabase = await createClient();
+
+  const studentIds = students.map((s: any) => s.id);
+  if (studentIds.length === 0) return [];
+
+  const { data: subs } = await supabase
+    .from("subscriptions")
+    .select("*")
+    .in("student_id", studentIds);
+
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
-  return students.map((s) => {
-    const sub = subs.find((sub: Subscription) => sub.studentId === s.id);
+  return students.map((s: any) => {
+    const sub = (subs ?? []).find((sub: any) => sub.student_id === s.id);
     let calculatedStatus: SubscriptionStatus = "inactive";
     let daysRemaining = 0;
 
     if (sub && sub.status === "active") {
-      const end = new Date(sub.endDate);
+      const end = new Date(sub.end_date);
       const diffTime = end.getTime() - today.getTime();
       daysRemaining = Math.max(0, Math.ceil(diffTime / (1000 * 60 * 60 * 24)));
-
-      if (diffTime < 0) {
-        calculatedStatus = "expired";
-        daysRemaining = 0;
-      } else if (daysRemaining <= 3) {
-        calculatedStatus = "expiring_soon";
-      } else {
-        calculatedStatus = "active";
-      }
+      if (diffTime < 0) { calculatedStatus = "expired"; daysRemaining = 0; }
+      else if (daysRemaining <= 3) calculatedStatus = "expiring_soon";
+      else calculatedStatus = "active";
     } else if (sub && sub.status === "inactive") {
       calculatedStatus = "inactive";
     }
@@ -66,72 +52,127 @@ export async function getSubscriptions(teacherId?: string): Promise<Subscription
   });
 }
 
-export async function activateSubscription(studentId: number, teacherId?: string) {
-  const subs = readSubs();
-  const idx = subs.findIndex((s) => s.studentId === studentId);
+export async function activateSubscription(studentId: string) {
+  const session = await getUserSession();
+  if (!session || (session.role !== "admin" && session.role !== "owner")) {
+    throw new Error("Unauthorized: Teacher session missing");
+  }
+
+  const admin = createAdminClient();
   
+  // Verify ownership and get latest student info
+  const { data: student, error: studentError } = await admin
+    .from("students")
+    .select("teacher_id, name")
+    .eq("id", studentId)
+    .single();
+
+  if (studentError || !student) {
+    console.error("[activateSubscription] Error fetching student:", studentError);
+    throw new Error("Student not found for activation");
+  }
+
+  // Multi-tenant check
+  if (session.role === "admin" && student.teacher_id !== session.teacherId) {
+    throw new Error("Unauthorized: Student does not belong to you");
+  }
+
   const startDate = new Date();
-  const endDate = getLastDayOfMonth(startDate);
+  const endDate = getLastDayOfMonth(startDate); // Requirements: end of current month
 
-  const newSub: Subscription = {
-    studentId,
-    teacherId,
-    startDate: startDate.toISOString(),
-    endDate: endDate.toISOString(),
-    status: "active"
-  };
+  console.log(`[activateSubscription] Activating for ${student.name} (${studentId}) until ${endDate.toISOString()}`);
 
-  if (idx > -1) {
-    subs[idx] = { ...subs[idx], ...newSub };
-  } else {
-    subs.push(newSub);
+  const { error: upsertError } = await admin.from("subscriptions").upsert({
+    student_id: studentId,
+    teacher_id: student.teacher_id,
+    start_date: startDate.toISOString(),
+    end_date: endDate.toISOString(),
+    status: "active",
+  }, { 
+    onConflict: "student_id" 
+  });
+
+  if (upsertError) {
+    console.error("[activateSubscription] DB Error:", upsertError);
+    throw new Error(`Failed to activate subscription: ${upsertError.message}`);
   }
 
-  writeSubs(subs);
+  revalidatePath("/teacher/subscriptions");
   return { success: true };
 }
 
-export async function renewSubscription(studentId: number, teacherId?: string) {
-  const subs = readSubs();
-  const idx = subs.findIndex((s: Subscription) => s.studentId === studentId);
-  if (idx === -1) return activateSubscription(studentId, teacherId);
+export async function renewSubscription(studentId: string) {
+  const session = await getUserSession();
+  if (!session || (session.role !== "admin" && session.role !== "owner")) {
+    throw new Error("Unauthorized: Teacher session missing");
+  }
 
-  const currentEnd = new Date(subs[idx].endDate);
-  const today = new Date();
-  
-  // If already expired, start from today and end at end of this month
-  // If still active, extend current end date to end of NEXT month
-  const baseDate = currentEnd > today ? currentEnd : today;
-  const newEnd = new Date(baseDate.getFullYear(), baseDate.getMonth() + 2, 0, 23, 59, 59);
+  const admin = createAdminClient();
 
-  subs[idx].endDate = newEnd.toISOString();
-  subs[idx].status = "active";
-  if (teacherId) subs[idx].teacherId = teacherId;
+  // Verify ownership
+  const { data: student, error: studentError } = await admin
+    .from("students")
+    .select("teacher_id, name")
+    .eq("id", studentId)
+    .single();
 
-  writeSubs(subs);
+  if (studentError || !student) {
+    throw new Error("Student not found for renewal");
+  }
+
+  if (session.role === "admin" && student.teacher_id !== session.teacherId) {
+    throw new Error("Unauthorized: Student does not belong to you");
+  }
+
+  const { data: existing } = await admin
+    .from("subscriptions")
+    .select("id, status")
+    .eq("student_id", studentId)
+    .maybeSingle();
+
+  if (!existing) {
+    console.log("[renewSubscription] No existing subscription found for student. Redirecting to activation.");
+    return activateSubscription(studentId);
+  }
+
+  const startDate = new Date();
+  const newEnd = getLastDayOfMonth(startDate);
+
+  console.log(`[renewSubscription] Renewing for ${student.name} (${studentId}) until ${newEnd.toISOString()}`);
+
+  const { error: updateError } = await admin
+    .from("subscriptions")
+    .update({
+      end_date: newEnd.toISOString(),
+      status: "active",
+      teacher_id: student.teacher_id // Ensure teacher_id is always sync
+    })
+    .eq("student_id", studentId);
+
+  if (updateError) {
+    console.error("[renewSubscription] DB Error:", updateError);
+    throw new Error(`Failed to renew subscription: ${updateError.message}`);
+  }
+
+  revalidatePath("/teacher/subscriptions");
   return { success: true };
 }
 
-export async function deactivateSubscription(studentId: number) {
-  const subs = readSubs();
-  const idx = subs.findIndex((s: Subscription) => s.studentId === studentId);
-  if (idx > -1) {
-    subs[idx].status = "inactive";
-    writeSubs(subs);
-    return { success: true };
-  }
-  return { success: false };
+export async function deactivateSubscription(studentId: string) {
+  const admin = createAdminClient();
+  const { error } = await admin.from("subscriptions").update({ status: "inactive" }).eq("student_id", studentId);
+  if (error) return { success: false };
+  return { success: true };
 }
+
 export async function getActiveStudents(teacherId?: string): Promise<SubscriptionRow[]> {
   const students = await getSubscriptions(teacherId);
   return students
-    .filter(
-      (s: any) => s.calculatedStatus === "active" || s.calculatedStatus === "expiring_soon"
-    )
+    .filter((s: any) => s.calculatedStatus === "active" || s.calculatedStatus === "expiring_soon")
     .map((s: any) => ({ ...s, isActive: true })) as SubscriptionRow[];
 }
 
-export async function getStudentSubscription(studentId: number): Promise<SubscriptionRow | null> {
+export async function getStudentSubscription(studentId: string): Promise<SubscriptionRow | null> {
   const students = await getSubscriptions();
-  return students.find((s) => s.id === studentId) || null;
+  return students.find((s: any) => s.id === studentId) || null;
 }

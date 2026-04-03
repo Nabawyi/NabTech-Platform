@@ -1,20 +1,14 @@
-import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
+import { getUserSession, logoutUser } from "@/app/actions/students";
 
 export default async function OwnerLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const cookieStore = await cookies();
-  const session = cookieStore.get("user_session");
+  const session = await getUserSession();
 
-  if (!session) redirect("/login");
-
-  try {
-    const userData = JSON.parse(session.value);
-    if (userData.role !== "owner") redirect("/login");
-  } catch {
+  if (!session || session.role !== "owner") {
     redirect("/login");
   }
 
@@ -34,8 +28,7 @@ export default async function OwnerLayout({
           </div>
           <form action={async () => {
             "use server";
-            const c = await cookies();
-            c.delete("user_session");
+            await logoutUser();
             redirect("/login");
           }}>
             <button

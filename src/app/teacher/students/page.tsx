@@ -62,8 +62,8 @@ export default function StudentsPage() {
 
   // Pending students state
   const [pendingStudents, setPendingStudents] = useState<Record<string, unknown>[]>([]);
-  const [approvingId, setApprovingId] = useState<number | null>(null);
-  const [rejectingId, setRejectingId] = useState<number | null>(null);
+  const [approvingId, setApprovingId] = useState<string | null>(null);
+  const [rejectingId, setRejectingId] = useState<string | null>(null);
 
   // Bulk delete state
   const [showBulkDelete, setShowBulkDelete] = useState(false);
@@ -139,7 +139,7 @@ export default function StudentsPage() {
   };
 
   // Approve a pending student → status becomes "active"
-  const handleApprove = async (id: number) => {
+  const handleApprove = async (id: string) => {
     setApprovingId(id);
     try {
       await approveStudent(id);
@@ -152,7 +152,7 @@ export default function StudentsPage() {
   };
 
   // Reject a pending student
-  const handleReject = async (id: number) => {
+  const handleReject = async (id: string) => {
     setRejectingId(id);
     try {
       await rejectStudent(id);
@@ -229,11 +229,19 @@ export default function StudentsPage() {
 
   const filtered = getFilteredStudents();
   
-  const getLocationName = (id: unknown) =>
-    locations.find((l) => l.id === String(id ?? ""))?.name || "غير محدد";
-  const getGroupName = (locId: unknown, grpId: unknown) => {
-    const loc = locations.find((l) => l.id === String(locId ?? ""));
-    return loc?.groups.find((g: GroupRecord) => g.id === String(grpId ?? ""))?.name || "غير محدد";
+  const getLocationName = (grpId: unknown) => {
+    for (const loc of locations) {
+      if (loc.groups.some(g => g.id === String(grpId ?? ""))) return loc.name;
+    }
+    return "غير محدد";
+  };
+  
+  const getGroupName = (grpId: unknown) => {
+    for (const loc of locations) {
+      const g = loc.groups.find((g: GroupRecord) => g.id === String(grpId ?? ""));
+      if (g) return g.name;
+    }
+    return "غير محدد";
   };
 
   const getLevelName = (levelId: unknown) =>
@@ -297,7 +305,7 @@ export default function StudentsPage() {
           <div className="space-y-2">
             {pendingStudents.map((student) => (
               <div
-                key={Number(student.id)}
+                key={String(student.id)}
                 className="bg-white dark:bg-gray-800 p-4 rounded-2xl border border-amber-100 dark:border-gray-700 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:shadow-md transition-all"
               >
                 <div className="flex items-center gap-3">
@@ -313,11 +321,11 @@ export default function StudentsPage() {
                 </div>
                 <div className="flex items-center gap-2">
                   <button
-                    onClick={() => handleApprove(Number(student.id))}
-                    disabled={approvingId === Number(student.id)}
+                    onClick={() => handleApprove(String(student.id))}
+                    disabled={approvingId === String(student.id)}
                     className="flex items-center gap-1.5 px-5 py-2.5 bg-emerald-500 text-white rounded-xl font-black text-xs shadow-lg shadow-emerald-500/20 hover:bg-emerald-600 hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-60"
                   >
-                    {approvingId === Number(student.id) ? (
+                    {approvingId === String(student.id) ? (
                       <Loader2 className="w-3.5 h-3.5 animate-spin" />
                     ) : (
                       <CheckCircle className="w-3.5 h-3.5" />
@@ -325,11 +333,11 @@ export default function StudentsPage() {
                     قبول وتفعيل
                   </button>
                   <button
-                    onClick={() => handleReject(Number(student.id))}
-                    disabled={rejectingId === Number(student.id)}
+                    onClick={() => handleReject(String(student.id))}
+                    disabled={rejectingId === String(student.id)}
                     className="flex items-center gap-1.5 px-5 py-2.5 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded-xl font-black text-xs border border-red-200 dark:border-red-800 hover:bg-red-500 hover:text-white hover:border-transparent transition-all disabled:opacity-60"
                   >
-                    {rejectingId === Number(student.id) ? (
+                    {rejectingId === String(student.id) ? (
                       <Loader2 className="w-3.5 h-3.5 animate-spin" />
                     ) : (
                       <XCircle className="w-3.5 h-3.5" />
@@ -441,7 +449,9 @@ export default function StudentsPage() {
                 return (
                   <tr key={student.id} className="group hover:bg-slate-50/50 dark:hover:bg-gray-700/30 transition-all duration-300">
                     <td className="px-6 py-5">
-                      <span className="px-3 py-1 bg-slate-100 dark:bg-gray-700 text-slate-600 dark:text-gray-300 rounded-lg font-black text-xs tabular-nums">{student.id}</span>
+                      <span className="px-3 py-1 bg-slate-100 dark:bg-gray-700 text-slate-600 dark:text-gray-300 rounded-lg font-black text-xs tabular-nums">
+                        {String(student.code || student.id).substring(0, 8)}
+                      </span>
                     </td>
                     <td className="px-6 py-5">
                       <div className="flex items-center gap-3">
@@ -459,8 +469,8 @@ export default function StudentsPage() {
                        <p className="text-[10px] font-bold text-gray-400 dark:text-gray-500">الصف {String(student.grade ?? student.gradeNumber ?? "")}</p>
                     </td>
                     <td className="px-6 py-5">
-                      <p className="text-xs font-black text-slate-600 dark:text-gray-300">{getLocationName(student.locationId)}</p>
-                      <p className="text-[10px] font-bold text-gray-400 dark:text-gray-500">{getGroupName(student.locationId, student.groupId)}</p>
+                      <p className="text-xs font-black text-slate-600 dark:text-gray-300">{getLocationName(student.groupId)}</p>
+                      <p className="text-[10px] font-bold text-gray-400 dark:text-gray-500">{getGroupName(student.groupId)}</p>
                       <button onClick={() => setChangeGroupStudent(student)} className="text-[9px] font-black text-primary hover:underline mt-1 block">تغيير</button>
                     </td>
                     <td className="px-6 py-5 space-y-2">
