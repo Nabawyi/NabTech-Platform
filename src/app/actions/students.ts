@@ -269,38 +269,14 @@ export async function rejectStudent(id: string) { return updateStudentStatus(id,
 // ─── Login (owner + teacher + student) ───────────────────────────────────────
 
 export async function loginUser(phone: string, pass: string) {
-  // Owner
-  if (phone === "owner" && pass === "owner123") {
-    const supabase = await createClient();
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email: "owner@nabtech.app",
-      password: "owner123",
-    });
-    if (error || !data?.user) return { error: "خطأ في تسجيل دخول المالك" };
-    
-    // Ensure owner profile exists
-    const admin = createAdminClient();
-    const { data: existingProfile } = await admin.from("profiles").select("id").eq("id", data.user.id).maybeSingle();
-    if (!existingProfile) {
-      await admin.from("profiles").insert({
-        id: data.user.id,
-        name: "مالك المنصة",
-        role: "owner",
-        phone: "owner"
-      });
-    }
-
-    return { success: true, role: "owner" };
-  }
-
-  // Teacher login (email)
+  // 1. Email Login (Owner or Teacher)
   if (phone.includes("@")) {
     const result = await loginTeacher(phone, pass);
     if (result.success) return { success: true, role: result.role === "owner" ? "owner" : "admin" };
     if (result.error) return { error: result.error };
   }
 
-  // Student login (phone → virtual email)
+  // 2. Student Login (Phone → Virtual email)
   const virtualEmail = `${phone.trim()}@student.nabtech.app`;
   const supabase = await createClient();
   const { data, error } = await supabase.auth.signInWithPassword({ email: virtualEmail, password: pass });

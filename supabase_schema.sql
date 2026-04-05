@@ -183,12 +183,12 @@ CREATE POLICY "qr_teacher" ON quiz_results FOR ALL USING (EXISTS (
 
 -- =====================================================================
 -- SEED: Owner account
--- Create this user first in Supabase Auth → Users → "Add user"
---   Email: owner@nabtech.app
---   Password: owner123
--- Then run this to set their role:
+-- 1. Create a user in Supabase Auth (Dashboard -> Authentication -> Add user)
+--    with any email (e.g., admin@nabtech.app) and a strong password.
+-- 2. Copy the newly created UUID.
+-- 3. Run the following to grant owner privileges (replace the UUID):
 -- =====================================================================
 
 -- INSERT INTO profiles (id, name, role, phone)
--- VALUES ('<REPLACE_WITH_OWNER_AUTH_UUID>', 'مالك المنصة', 'owner', '')
+-- VALUES ('REPLACE_WITH_THE_UUID_OF_THE_NEWLY_CREATED_USER', 'مالك المنصة', 'owner', '')
 -- ON CONFLICT (id) DO UPDATE SET role = 'owner';
