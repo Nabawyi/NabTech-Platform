@@ -26,10 +26,16 @@ function applyTheme(dark: boolean) {
   const html = document.documentElement;
   if (dark) {
     html.classList.add("dark");
-    localStorage.setItem("theme", "dark");
+    if (typeof localStorage !== "undefined") localStorage.setItem("theme", "dark");
   } else {
     html.classList.remove("dark");
-    localStorage.setItem("theme", "light");
+    if (typeof localStorage !== "undefined") localStorage.setItem("theme", "light");
+  }
+}
+
+function setTransitionsReady() {
+  if (typeof window !== "undefined") {
+    document.documentElement.classList.add("theme-ready");
   }
 }
 
@@ -40,24 +46,27 @@ export function SettingsProvider({
   children: React.ReactNode;
   initialSettings: TeacherSettings;
 }) {
-  // Resolve the initial dark_mode: check localStorage first (client wins over server JSON)
-  const resolvedInitial = useMemo<TeacherSettings>(() => {
-    if (typeof window === "undefined") return initialSettings;
-    try {
-      const stored = localStorage.getItem("theme");
-      if (stored === "dark") return { ...initialSettings, dark_mode: true };
-      if (stored === "light") return { ...initialSettings, dark_mode: false };
-    } catch {}
-    return initialSettings;
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
-
-  const [settings, setSettingsState] = useState<TeacherSettings>(resolvedInitial);
+  const [settings, setSettingsState] = useState<TeacherSettings>(initialSettings);
   const mounted = useRef(false);
 
-  // On first mount: sync localStorage → html class (covers SSR mismatch)
+  // On first mount: sync localStorage to state
   useEffect(() => {
     mounted.current = true;
-    applyTheme(settings.dark_mode);
+    try {
+      const stored = typeof localStorage !== "undefined" ? localStorage.getItem("theme") : null;
+      if (stored === "dark" && !settings.dark_mode) {
+        setSettingsState((prev) => ({ ...prev, dark_mode: true }));
+        applyTheme(true);
+      } else if (stored === "light" && settings.dark_mode) {
+        setSettingsState((prev) => ({ ...prev, dark_mode: false }));
+        applyTheme(false);
+      } else {
+        applyTheme(settings.dark_mode);
+      }
+    } catch {}
+    
+    // Enable transitions after initial theme is settled
+    requestAnimationFrame(() => setTransitionsReady());
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Whenever dark_mode changes after mount: apply immediately

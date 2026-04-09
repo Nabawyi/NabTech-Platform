@@ -9,6 +9,7 @@ import {
   renewSubscription, 
   deactivateSubscription,
 } from "@/app/actions/subscriptions";
+import { getLocations } from "@/app/actions/locations";
 import StatusBadge from "@/components/teacher/StatusBadge";
 import { EDUCATION_LEVELS, type SchoolLevel } from "@/lib/constants";
 import { filterStudents, getValidGrades } from "@/lib/education";
@@ -21,7 +22,7 @@ import {
   AlertCircle,
   CreditCard,
 } from "lucide-react";
-import type { SubscriptionRow } from "@/types/domain";
+import type { SubscriptionRow, LocationRecord, GroupRecord } from "@/types/domain";
 
 function SubscriptionsContent() {
   const searchParams = useSearchParams();
@@ -34,6 +35,9 @@ function SubscriptionsContent() {
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [stageFilter, setStageFilter] = useState<"all" | SchoolLevel>("all");
   const [gradeFilter, setGradeFilter] = useState<string>("all");
+  const [locations, setLocations] = useState<LocationRecord[]>([]);
+  const [locationFilter, setLocationFilter] = useState('all');
+  const [groupFilter, setGroupFilter] = useState('all');
   
   const [confirmModal, setConfirmModal] = useState<{
     show: boolean;
@@ -52,7 +56,10 @@ function SubscriptionsContent() {
       return;
     }
     setLoading(true);
-    const result = await getSubscriptions();
+    const [result, allLocations] = await Promise.all([
+      getSubscriptions(),
+      getLocations(settings.id)
+    ]);
     
     // 2. Filter data at source: only students in enabled levels AND grades
     const globalFiltered = result.filter(student => {
@@ -62,6 +69,7 @@ function SubscriptionsContent() {
     });
 
     setData(globalFiltered);
+    setLocations(allLocations);
     setLoading(false);
   };
 
@@ -103,21 +111,26 @@ function SubscriptionsContent() {
   // The local filtered data (UI level)
   const filteredData = data.filter((s) => {
     const nm = String(s.name ?? "");
-    const matchesSearch = nm.toLowerCase().includes(search.toLowerCase()) || String(s.id).includes(search);
+    const matchesSearch = nm.toLowerCase().includes(search.toLowerCase()) || 
+                          (s.code && s.code.toLowerCase().includes(search.toLowerCase()));
     const matchesStatus = statusFilter === "all" || s.calculatedStatus === statusFilter;
     const matchesStage = stageFilter === "all" || s.level === stageFilter;
-    const matchesGrade = gradeFilter === "all" || s.gradeNumber === Number(gradeFilter);
+    const matchesGrade = gradeFilter === "all" || s.gradeCode === gradeFilter;
+    const matchesLocation = locationFilter === "all" || s.locationId === locationFilter;
+    const matchesGroup = groupFilter === "all" || s.groupId === groupFilter;
     
-    return matchesSearch && matchesStatus && matchesStage && matchesGrade;
+    return matchesSearch && matchesStatus && matchesStage && matchesGrade && matchesLocation && matchesGroup;
   });
 
   // Level options only from settings
   const levelOptions = enabledLevels;
 
-  // Grade options only from settings for selected level
-  const gradeOptions = stageFilter === "all" 
-    ? settings.enabled_grades 
-    : getEnabledGradesForLevel(stageFilter);
+  // Grade options from actual data based on selected level
+  const gradeOptions = Array.from(new Map(
+    data
+      .filter(s => stageFilter === "all" || s.level === stageFilter)
+      .map(s => [s.gradeCode, s.gradeLabel || `صف ${s.gradeNumber}`])
+  )).sort((a, b) => String(a[0]).localeCompare(String(b[0])));
 
   if (enabledLevels.length === 0) {
     return (
@@ -165,9 +178,9 @@ function SubscriptionsContent() {
       </div>
 
       {/* ── Filters ─────────────────────────────────────────── */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-7 gap-3">
         {/* Search */}
-        <div className="lg:col-span-2 relative">
+        <div className="sm:col-span-2 xl:col-span-2 relative">
           <Search className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-fg pointer-events-none" />
           <input
             type="text"
@@ -192,7 +205,7 @@ function SubscriptionsContent() {
 
         <FilterSelect value={gradeFilter} onChange={setGradeFilter}>
           <option value="all">كل الصفوف</option>
-          {gradeOptions.map((n: number) => <option key={n} value={String(n)}>صف {n}</option>)}
+          {gradeOptions.map(([code, label]) => <option key={String(code)} value={String(code)}>{String(label)}</option>)}
         </FilterSelect>
 
 
@@ -202,6 +215,22 @@ function SubscriptionsContent() {
           <option value="expiring_soon">ينتهي قريباً</option>
           <option value="expired">منتهي</option>
           <option value="inactive">غير مفعل</option>
+        </FilterSelect>
+
+        <FilterSelect value={locationFilter} onChange={(v) => { setLocationFilter(v); setGroupFilter("all"); }}>
+          <option value="all">كل السناتر</option>
+          {locations.map(loc => <option key={loc.id} value={loc.id}>{loc.name}</option>)}
+        </FilterSelect>
+
+        <FilterSelect value={groupFilter} onChange={setGroupFilter}>
+          <option value="all">كل المجموعات</option>
+          {locations.find(l => l.id === locationFilter)?.groups
+            .filter((grp: GroupRecord) => {
+              const stageMatch = stageFilter === 'all' || grp.stage === stageFilter;
+              const gradeMatch = gradeFilter === 'all' || grp.grade === Number(gradeFilter);
+              return stageMatch && gradeMatch;
+            })
+            .map((grp: GroupRecord) => <option key={grp.id} value={grp.id}>{grp.name}</option>)}
         </FilterSelect>
       </div>
 
@@ -222,8 +251,9 @@ function SubscriptionsContent() {
               <tr className="bg-muted border-b border-card-border text-[10px] font-black text-muted-fg uppercase tracking-widest">
                 <th className="px-6 py-4">الطالب</th>
                 <th className="px-4 py-4">المرحلة</th>
+                <th className="px-4 py-4 whitespace-nowrap">المجموعة</th>
                 <th className="px-4 py-4">الحالة</th>
-                <th className="px-4 py-4">تاريخ الانتهاء</th>
+                <th className="px-4 py-4">تاريخ التجديد</th>
                 <th className="px-4 py-4">المتبقي</th>
                 <th className="px-6 py-4 text-center">الإجراءات</th>
               </tr>
@@ -248,7 +278,7 @@ function SubscriptionsContent() {
                         </div>
                         <div>
                           <p className="font-black text-foreground text-sm">{String(student.name ?? "")}</p>
-                          <p className="text-[10px] font-bold text-muted-fg mt-0.5">كود: {student.id}</p>
+                          <p className="text-[10px] font-bold text-muted-fg mt-0.5">كود: {student.code || student.id.slice(0, 8)}</p>
                         </div>
                       </div>
                     </td>
@@ -262,14 +292,25 @@ function SubscriptionsContent() {
                       </p>
                     </td>
 
+                    {/* Group */}
+                    <td className="px-4 py-5 whitespace-nowrap">
+                      <p className="text-xs font-bold text-foreground">
+                        {student.groupName || "بدون مجموعة"}
+                      </p>
+                    </td>
+
                     {/* Status badge */}
                     <td className="px-4 py-5">
                       <StatusBadge status={student.calculatedStatus} />
                     </td>
 
-                    {/* End date */}
+                    {/* Renewal date */}
                     <td className="px-4 py-5">
-                      <span className="text-sm font-bold text-foreground tabular-nums">{endDate}</span>
+                      <span className="text-sm font-bold text-foreground tabular-nums">
+                        {student.subscription?.renewalDate
+                          ? new Date(student.subscription.renewalDate).toLocaleDateString("ar-EG")
+                          : "---"}
+                      </span>
                     </td>
 
                     {/* Days remaining + mini bar */}

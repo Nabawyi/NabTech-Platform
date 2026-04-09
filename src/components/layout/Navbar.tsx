@@ -5,8 +5,8 @@ import LogoutButton from './LogoutButton';
 
 export default async function Navbar() {
   const session = await getUserSession();
-  const isAdmin = session?.role === "admin";
-  const logoHref = session ? (isAdmin ? "/admin" : "/dashboard") : "/";
+  const isAdmin = session?.role === "admin" || session?.role === "teacher";
+  const logoHref = session ? (isAdmin ? "/teacher" : (session.role === "owner" ? "/owner" : "/student")) : "/";
 
   return (
     <nav className="sticky top-0 z-50 w-full bg-slate-900 border-b border-slate-800 shadow-sm">
@@ -21,7 +21,7 @@ export default async function Navbar() {
           {session ? (
             <>
               <Link 
-                href={isAdmin ? "/admin" : "/dashboard"} 
+                href={logoHref} 
                 className="text-sm font-bold bg-primary text-white px-5 sm:px-6 py-2 rounded-full hover:bg-primary-dark transition-all shadow-md"
               >
                 لوحة التحكم

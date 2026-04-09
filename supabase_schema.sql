@@ -39,6 +39,7 @@ CREATE TABLE IF NOT EXISTS students (
   parent_phone TEXT NOT NULL,
   stage        TEXT NOT NULL CHECK (stage IN ('primary','preparatory','secondary')),
   grade        INT  NOT NULL,
+  student_code TEXT,
   city         TEXT DEFAULT 'غير محدد',
   group_id     UUID,
   password     TEXT,
@@ -55,6 +56,7 @@ CREATE TABLE IF NOT EXISTS groups (
   end_time      TEXT,
   stage         TEXT CHECK (stage IN ('primary','preparatory','secondary')),
   grade         INT,
+  grade_code    TEXT NOT NULL DEFAULT '',
   location_id   TEXT,
   location_name TEXT,
   created_at    TIMESTAMPTZ DEFAULT NOW()
@@ -72,6 +74,7 @@ CREATE TABLE IF NOT EXISTS lessons (
   title       TEXT NOT NULL,
   stage       TEXT NOT NULL CHECK (stage IN ('primary','preparatory','secondary')),
   grade       INT  NOT NULL,
+  grade_code  TEXT NOT NULL DEFAULT '',
   video_url   TEXT DEFAULT '',
   description TEXT DEFAULT '',
   pdf_url     TEXT DEFAULT '',
@@ -95,6 +98,7 @@ CREATE TABLE IF NOT EXISTS subscriptions (
   status     TEXT NOT NULL DEFAULT 'active' CHECK (status IN ('active','inactive')),
   start_date TIMESTAMPTZ DEFAULT NOW(),
   end_date   TIMESTAMPTZ NOT NULL,
+  renewal_date TIMESTAMPTZ DEFAULT NOW(),
   created_at TIMESTAMPTZ DEFAULT NOW(),
   UNIQUE (student_id)
 );
@@ -149,13 +153,16 @@ CREATE POLICY "teacher_settings_self" ON teacher_settings FOR ALL USING (auth.ui
 CREATE POLICY "students_teacher_read"  ON students FOR SELECT USING (auth.uid() = teacher_id OR auth.uid() = auth_id);
 CREATE POLICY "students_teacher_write" ON students FOR ALL    USING (auth.uid() = teacher_id) WITH CHECK (auth.uid() = teacher_id);
 
--- groups: teacher owns
+-- groups: teacher owns, active student can read own group
 CREATE POLICY "groups_teacher" ON groups FOR ALL USING (auth.uid() = teacher_id) WITH CHECK (auth.uid() = teacher_id);
+CREATE POLICY "groups_student" ON groups FOR SELECT USING (
+  EXISTS (SELECT 1 FROM students s WHERE s.group_id = groups.id AND s.auth_id = auth.uid() AND s.status = 'active')
+);
 
 -- lessons: teacher owns; students from same teacher can read
 CREATE POLICY "lessons_teacher_write" ON lessons FOR ALL    USING (auth.uid() = teacher_id) WITH CHECK (auth.uid() = teacher_id);
 CREATE POLICY "lessons_student_read"  ON lessons FOR SELECT USING (
-  EXISTS (SELECT 1 FROM students s WHERE s.auth_id = auth.uid() AND s.teacher_id = lessons.teacher_id AND s.status = 'active')
+  EXISTS (SELECT 1 FROM students s WHERE s.auth_id = auth.uid() AND s.teacher_id = lessons.teacher_id AND s.grade_code = lessons.grade_code AND s.status = 'active')
 );
 
 -- quiz_questions: follow lesson access

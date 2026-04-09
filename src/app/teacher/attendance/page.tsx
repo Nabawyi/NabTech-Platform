@@ -18,7 +18,7 @@ export default function AttendancePage() {
   const [locations, setLocations] = useState<LocationRecord[]>([]);
   const [attendance, setAttendance] = useState<AttendanceRecord[]>([]);
   const [loading, setLoading] = useState(true);
-  const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
+  const [date, setDate] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
   const [locationFilter, setLocationFilter] = useState('all');
   const [groupFilter, setGroupFilter] = useState('all');
@@ -49,6 +49,10 @@ export default function AttendancePage() {
   };
 
   useEffect(() => {
+    if (!date) {
+      setDate(new Date().toISOString().split('T')[0]);
+      return;
+    }
     loadData();
   }, [date]); // eslint-disable-line react-hooks/exhaustive-deps -- refetch when date changes only
 
@@ -123,14 +127,14 @@ export default function AttendancePage() {
 
   const byStageGrade = filterStudents(settingsFilteredStudents as Record<string, unknown>[], {
     stage: stageFilter,
-    grade: gradeFilter === "all" ? "all" : Number(gradeFilter),
+    gradeCode: gradeFilter,
   }) as SubscriptionRow[];
 
   const filteredStudents = byStageGrade.filter((s) => {
     const name = String(s.name ?? "");
     const matchesSearch =
       name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      s.id.toString().includes(searchTerm);
+      (s.code && s.code.toLowerCase().includes(searchTerm.toLowerCase()));
     const matchesLocation =
       locationFilter === "all" || s.locationId === locationFilter;
     const matchesGroup =
@@ -139,11 +143,12 @@ export default function AttendancePage() {
     return matchesSearch && matchesLocation && matchesGroup;
   });
 
-  // Grade options filtered by settings
-  const gradeOptions =
-    stageFilter === "all"
-      ? [...new Set(enabledLevels.flatMap((l) => getEnabledGradesForLevel(l.id)))]
-      : getEnabledGradesForLevel(stageFilter);
+  // Grade options from actual student data based on selected level
+  const gradeOptions = Array.from(new Map(
+    students
+      .filter(s => stageFilter === "all" || s.stage === stageFilter)
+      .map(s => [s.gradeCode, s.gradeLabel || `صف ${s.grade}`])
+  )).sort((a, b) => String(a[0]).localeCompare(String(b[0])));
 
   return (
     <div className="space-y-6 animate-in fade-in duration-500 pb-20">
@@ -284,16 +289,16 @@ export default function AttendancePage() {
                  ))}
                </select>
 
-               <select 
-                 value={gradeFilter}
-                 onChange={(e) => setGradeFilter(e.target.value)}
-                 className="px-4 py-3 bg-gray-50 dark:bg-gray-700 rounded-2xl border-transparent focus:ring-4 focus:ring-primary/10 transition-all outline-none font-bold text-xs text-gray-500 dark:text-gray-300 cursor-pointer shadow-sm"
-               >
-                 <option value="all">كل الصفوف</option>
-                 {gradeOptions.map((n) => (
-                   <option key={n} value={String(n)}>صف {n}</option>
-                 ))}
-               </select>
+                <select 
+                  value={gradeFilter}
+                  onChange={(e) => setGradeFilter(e.target.value)}
+                  className="px-4 py-3 bg-gray-50 dark:bg-gray-700 rounded-2xl border-transparent focus:ring-4 focus:ring-primary/10 transition-all outline-none font-bold text-xs text-gray-500 dark:text-gray-300 cursor-pointer shadow-sm"
+                >
+                  <option value="all">كل الصفوف</option>
+                  {gradeOptions.map(([code, label]) => (
+                    <option key={String(code)} value={String(code)}>{String(label)}</option>
+                  ))}
+                </select>
 
                <select 
                  value={locationFilter}
@@ -316,7 +321,13 @@ export default function AttendancePage() {
                  className="px-4 py-3 bg-gray-50 dark:bg-gray-700 rounded-2xl border-transparent focus:ring-4 focus:ring-primary/10 transition-all outline-none font-bold text-xs text-gray-500 dark:text-gray-300 cursor-pointer shadow-sm disabled:opacity-50"
                >
                  <option value="all">كل المجموعات</option>
-                 {locations.find((l) => l.id === locationFilter)?.groups.map((grp: GroupRecord) => (
+                 {locations.find((l) => l.id === locationFilter)?.groups
+                   .filter((grp: GroupRecord) => {
+                     const stageMatch = stageFilter === 'all' || grp.stage === stageFilter;
+                     const gradeMatch = gradeFilter === 'all' || grp.grade === Number(gradeFilter);
+                     return stageMatch && gradeMatch;
+                   })
+                   .map((grp: GroupRecord) => (
                    <option key={grp.id} value={grp.id}>{grp.name}</option>
                  ))}
                </select>
@@ -329,22 +340,26 @@ export default function AttendancePage() {
                 <tr>
                   <th className="px-6 py-5">كود الطالب</th>
                   <th className="px-6 py-5">اسم الطالب</th>
+                  <th className="px-6 py-5">المجموعة</th>
                   <th className="px-6 py-5 text-center">الحالة</th>
                   <th className="px-6 py-5 text-center">الإجراء</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50 dark:divide-gray-700">
                 {filteredStudents.length === 0 && !loading && (
-                   <tr><td colSpan={4} className="p-20 text-center text-gray-400 dark:text-gray-500 font-bold italic opacity-30">لا يوجد طلاب مطابقين للبحث</td></tr>
+                   <tr><td colSpan={5} className="p-20 text-center text-gray-400 dark:text-gray-500 font-bold italic opacity-30">لا يوجد طلاب مطابقين للبحث</td></tr>
                 )}
                 {filteredStudents.map((student) => {
                   const currentStatus = getStudentStatus(student.id);
                   return (
                     <tr key={student.id} className="hover:bg-slate-50/80 dark:hover:bg-gray-700/30 transition-all">
                       <td className="px-6 py-5">
-                        <span className="px-3 py-1 bg-slate-100 dark:bg-gray-700 text-slate-600 dark:text-gray-300 rounded-lg font-black text-xs tabular-nums">{student.id}</span>
+                        <span className="px-3 py-1 bg-slate-100 dark:bg-gray-700 text-slate-600 dark:text-gray-300 rounded-lg font-black text-xs tabular-nums">{student.code || student.id.slice(0, 8)}</span>
                       </td>
                       <td className="px-6 py-5 font-black text-slate-800 dark:text-gray-100 text-base">{student.name}</td>
+                      <td className="px-6 py-5 text-slate-600 dark:text-gray-400 text-sm font-bold whitespace-nowrap">
+                        {student.groupName || 'بدون مجموعة'}
+                      </td>
                       <td className="px-6 py-5 text-center">
                         {!currentStatus ? (
                           <span className="text-gray-300 dark:text-gray-600 font-bold text-xs">بانتظار التحضير</span>

@@ -29,7 +29,7 @@ export default function SubscriptionRequiredPage() {
             تجديد الاشتراك
           </Link>
           <Link 
-            href="/dashboard"
+            href="/student"
             className="flex-1 bg-muted border border-card-border text-foreground px-8 py-4 rounded-2xl font-black hover:bg-card-border hover:shadow-sm transition-all flex items-center justify-center gap-3"
           >
             <Home className="w-5 h-5 text-muted-fg" />

@@ -153,6 +153,7 @@ export function normalizeStudentRecord(
 export type FilterStudentsParams = {
   stage?: Stage | "all";
   grade?: number | "all";
+  gradeCode?: string | "all";
   /** When true, only students with `isActive === true`; when false, only false; `all` skips. */
   isActive?: boolean | "all";
 };
@@ -176,6 +177,10 @@ export function filterStudents<T extends Record<string, unknown>>(
     if (params.grade !== undefined && params.grade !== "all") {
       const g = typeof gr === "number" ? gr : Number(gr);
       if (!Number.isFinite(g) || g !== params.grade) return false;
+    }
+
+    if (params.gradeCode && params.gradeCode !== "all") {
+      if (s.gradeCode !== params.gradeCode) return false;
     }
 
     if (params.isActive !== undefined && params.isActive !== "all") {

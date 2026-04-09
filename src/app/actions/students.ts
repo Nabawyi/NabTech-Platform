@@ -32,17 +32,37 @@ export async function getUserSession() {
   }
 
   if (role === "student") {
-    // fetch student row
+    // Step 1: Fetch student row with group info (safe join — group_id FK to groups.id exists)
     const { data: student } = await supabase
       .from("students")
-      .select("*")
+      .select(`
+        *,
+        group:groups(name, location_name, start_time, end_time)
+      `)
       .eq("auth_id", user.id)
       .single();
+
     if (!student) return null;
+
+    // Step 2: Fetch teacher name separately via profiles (avoids broken FK hint)
+    let teacherName = "معلم غير معروف";
+    try {
+      const { data: teacherProfile } = await supabase
+        .from("profiles")
+        .select("name")
+        .eq("id", student.teacher_id)
+        .single();
+      if (teacherProfile?.name) teacherName = teacherProfile.name;
+    } catch {
+      // Non-critical — fallback name used
+    }
+
     return {
       role: "student",
       id: student.id,
+      code: student.student_code ?? "",
       teacherId: student.teacher_id,
+      teacherName,
       name: student.name,
       stage: student.stage,
       level: student.stage,
@@ -50,6 +70,10 @@ export async function getUserSession() {
       grade: getGradeLabel(student.stage as SchoolLevel, student.grade),
       locationId: student.location_id,
       groupId: student.group_id,
+      groupName: student.group?.name || "غير محدد",
+      locationName: student.group?.location_name || "غير محدد",
+      startTime: student.group?.start_time || "غير محدد",
+      endTime: student.group?.end_time || "غير محدد",
       phone: student.phone,
       parentPhone: student.parent_phone,
     };
@@ -66,11 +90,16 @@ export async function getStudents(teacherId?: string): Promise<StudentRow[]> {
 
   const supabase = await createClient();
   let effectiveTeacherId = teacherId;
-  if (session.role === "admin" || session.role === "student") {
+
+  if (session.role === "student") {
+    throw new Error("Unauthorized: Students cannot list other students");
+  }
+
+  if (session.role === "admin") {
     effectiveTeacherId = session.teacherId;
   }
 
-  let query = supabase.from("students").select("*").order("created_at", { ascending: false });
+  let query = supabase.from("students").select("*, groups(name, location_id)").order("created_at", { ascending: false });
   if (effectiveTeacherId) query = query.eq("teacher_id", effectiveTeacherId);
 
   const { data, error } = await query;
@@ -90,11 +119,13 @@ function mapStudentRow(s: any): StudentRow {
     grade: s.grade,
     level: s.stage,
     gradeNumber: s.grade,
+    gradeCode: s.grade_code ?? "",
     gradeDisplay: getGradeLabel(s.stage as SchoolLevel, s.grade),
     gradeLabel: getGradeLabel(s.stage as SchoolLevel, s.grade),
     city: s.city ?? "",
-    locationId: s.location_id ?? "",
+    locationId: s.groups?.location_id ?? s.location_id ?? "",
     groupId: s.group_id ?? "",
+    groupName: s.groups?.name ?? "",
     code: s.student_code ?? "",
     password: s.password ?? "",
     status: s.status,
@@ -134,7 +165,7 @@ async function generateStudentCode(teacherId: string, stage: Stage, gradeNumber:
 
 export async function addStudent(studentData: AddStudentPayload): Promise<StudentRow> {
   const session = await getUserSession();
-  
+
   // RLS & API Authorization Logic
   if (session) {
     if (session.role === "student") throw new Error("Unauthorized");
@@ -142,7 +173,7 @@ export async function addStudent(studentData: AddStudentPayload): Promise<Studen
   } else {
     // Unauthenticated join flow: must provide inviteCode
     if (!studentData.inviteCode) throw new Error("Unauthorized: Missing invite code");
-    
+
     // Validate invite_code truly matches the teacherId requested
     const admin = createAdminClient();
     const { data: validTeacher } = await admin
@@ -151,7 +182,7 @@ export async function addStudent(studentData: AddStudentPayload): Promise<Studen
       .eq("invite_code", studentData.inviteCode)
       .eq("status", "active")
       .single();
-      
+
     if (!validTeacher || validTeacher.id !== studentData.teacherId) {
       throw new Error("Unauthorized: Invalid teacher or invite code mismatch");
     }
@@ -177,7 +208,7 @@ export async function addStudent(studentData: AddStudentPayload): Promise<Studen
       .select("teacher_id, grade_code")
       .eq("id", studentData.groupId)
       .single();
-      
+
     if (!group) throw new Error("المجموعة غير موجودة");
     if (group.teacher_id !== studentData.teacherId) throw new Error("Unauthorized: المجموعة لا تتبع لهذا المعلم");
     if (group.grade_code !== grade_code) throw new Error("المجموعة لا تتوافق مع المرحلة أو الصف المختار");
@@ -187,7 +218,7 @@ export async function addStudent(studentData: AddStudentPayload): Promise<Studen
   const { data: existing } = await admin.from("students").select("id").eq("phone", studentData.phone).maybeSingle();
   if (existing) throw new Error("رقم الهاتف مسجل مسبقاً");
 
-  // Create a Supabase auth user with a virtual email so students can log in
+  // Create a Supabase auth user with a virtual email derived from phone
   const virtualEmail = `${String(studentData.phone).trim()}@student.nabtech.app`;
   const { data: authData, error: authError } = await admin.auth.admin.createUser({
     email: virtualEmail,
@@ -195,12 +226,13 @@ export async function addStudent(studentData: AddStudentPayload): Promise<Studen
     email_confirm: true,
   });
 
-  let authId: string | null = null;
-  if (!authError && authData?.user) {
-    authId = authData.user.id;
-    // Insert a profile row for the student
-    await admin.from("profiles").insert({ id: authId, name: String(studentData.name ?? ""), role: "student", phone: String(studentData.phone) });
+  if (authError || !authData?.user) {
+    throw new Error(authError ? authError.message : "فشل إنشاء الحساب في نظام المصادقة");
   }
+
+  const authId = authData.user.id;
+  // Insert a profile row for the student
+  await admin.from("profiles").insert({ id: authId, name: String(studentData.name ?? ""), role: "student", phone: String(studentData.phone) });
 
   const { data: newStudent, error: insertError } = await admin.from("students").insert({
     auth_id: authId,
@@ -243,19 +275,19 @@ export async function updateStudentStatus(id: string, status: string): Promise<b
 
   // Issue 2: Generate student_code ONLY upon physical activation, if missing
   if (status === "active" && !student.student_code) {
-     updatePayload.student_code = await generateStudentCode(student.teacher_id, student.stage, student.grade);
+    updatePayload.student_code = await generateStudentCode(student.teacher_id, student.stage, student.grade);
   }
 
   const { error } = await admin.from("students").update(updatePayload).eq("id", id);
   if (error) throw new Error(error.message);
-  
+
   // Also activate their subscription
   if (status === "active") {
     const { activateSubscription } = await import("./subscriptions");
     try {
       // Do not wait if it fails, or maybe just proceed
       await activateSubscription(id);
-    } catch(e) {
+    } catch (e) {
       console.warn("Could not auto-activate sub:", e);
     }
   }
@@ -268,33 +300,36 @@ export async function rejectStudent(id: string) { return updateStudentStatus(id,
 
 // ─── Login (owner + teacher + student) ───────────────────────────────────────
 
-export async function loginUser(phone: string, pass: string) {
-  // 1. Email Login (Owner or Teacher)
-  if (phone.includes("@")) {
-    const result = await loginTeacher(phone, pass);
+export async function loginUser(identifier: string, pass: string) {
+  // 1. Identify if identifier is a phone number or email
+  const isPhone = /^01[0-2,5]\d{8}$/.test(identifier.trim());
+
+  if (isPhone) {
+    // 2. Student Login (Phone → Virtual email)
+    const virtualEmail = `${identifier.trim()}@student.nabtech.app`;
+    const supabase = await createClient();
+    const { data, error } = await supabase.auth.signInWithPassword({ email: virtualEmail, password: pass });
+    if (error || !data?.user) return { error: "رقم الهاتف أو كلمة المرور غير صحيحة" };
+
+    // Check student status
+    const admin = createAdminClient();
+    const { data: student } = await admin.from("students").select("status").eq("auth_id", data.user.id).single();
+    if (student?.status === "pending") {
+      await supabase.auth.signOut();
+      return { error: "حسابك لا يزال قيد المراجعة ولم يتم تفعيله بعد" };
+    }
+    if (student?.status === "rejected") {
+      await supabase.auth.signOut();
+      return { error: "تم إيقاف حسابك، يرجى مراجعة الإدارة" };
+    }
+    return { success: true, role: "student" };
+  } else {
+    // 3. Email Login (Owner or Teacher)
+    const result = await loginTeacher(identifier, pass);
     if (result.success) return { success: true, role: result.role === "owner" ? "owner" : "admin" };
     if (result.error) return { error: result.error };
+    return { error: "البريد الإلكتروني أو كلمة المرور غير صحيحة" };
   }
-
-  // 2. Student Login (Phone → Virtual email)
-  const virtualEmail = `${phone.trim()}@student.nabtech.app`;
-  const supabase = await createClient();
-  const { data, error } = await supabase.auth.signInWithPassword({ email: virtualEmail, password: pass });
-  if (error || !data?.user) return { error: "رقم الهاتف أو كلمة المرور غير صحيحة" };
-
-  // Check student status
-  const admin = createAdminClient();
-  const { data: student } = await admin.from("students").select("status").eq("auth_id", data.user.id).single();
-  if (student?.status === "pending") {
-    await supabase.auth.signOut();
-    return { error: "حسابك لا يزال قيد المراجعة ولم يتم تفعيله بعد" };
-  }
-  if (student?.status === "rejected") {
-    await supabase.auth.signOut();
-    return { error: "تم إيقاف حسابك، يرجى مراجعة الإدارة" };
-  }
-
-  return { success: true, role: "student" };
 }
 
 export async function logoutUser() {

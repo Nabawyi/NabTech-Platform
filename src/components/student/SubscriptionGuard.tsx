@@ -18,11 +18,11 @@ export default function SubscriptionGuard({
     if (role !== "student") return;
 
     const isInvalid = status !== "active" && status !== "expiring_soon";
-    const isLessonsPath = pathname.startsWith("/dashboard/lessons");
-    const isRequiredPage = pathname === "/dashboard/subscription-required";
+    const isLessonsPath = pathname.startsWith("/student/lessons");
+    const isRequiredPage = pathname === "/student/subscription-required";
 
     if (isInvalid && isLessonsPath && !isRequiredPage) {
-      router.replace("/dashboard/subscription-required");
+      router.replace("/student/subscription-required");
     }
   }, [pathname, status, role, router]);
 

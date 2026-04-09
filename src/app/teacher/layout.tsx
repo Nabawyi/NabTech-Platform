@@ -2,12 +2,28 @@ import TeacherSidebar from "@/components/teacher/Sidebar";
 import TeacherTopbar from "@/components/teacher/Topbar";
 import { SettingsProvider } from "@/components/providers/SettingsProvider";
 import { getTeacherSettings } from "@/app/actions/settings";
+import { redirect } from "next/navigation";
+import { getUserSession } from "@/app/actions/students";
 
 export default async function TeacherLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const session = await getUserSession();
+  if (!session) {
+    redirect("/login");
+  }
+
+  if (session.role !== "admin" && session.role !== "teacher") {
+    if (session.role === "student") {
+      redirect("/student");
+    } else if (session.role === "owner") {
+      redirect("/owner");
+    }
+    redirect("/login");
+  }
+
   const settings = await getTeacherSettings();
 
   return (

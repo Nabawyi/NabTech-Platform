@@ -45,7 +45,13 @@ export async function getSubscriptions(teacherId?: string): Promise<Subscription
 
     return {
       ...s,
-      subscription: sub ?? null,
+      subscription: sub ? { 
+        ...sub, 
+        studentId: sub.student_id, 
+        startDate: sub.start_date, 
+        endDate: sub.end_date, 
+        renewalDate: sub.renewal_date 
+      } : null,
       calculatedStatus,
       daysRemaining,
     } as unknown as SubscriptionRow;
@@ -87,6 +93,7 @@ export async function activateSubscription(studentId: string) {
     teacher_id: student.teacher_id,
     start_date: startDate.toISOString(),
     end_date: endDate.toISOString(),
+    renewal_date: startDate.toISOString(),
     status: "active",
   }, { 
     onConflict: "student_id" 
@@ -144,6 +151,7 @@ export async function renewSubscription(studentId: string) {
     .from("subscriptions")
     .update({
       end_date: newEnd.toISOString(),
+      renewal_date: startDate.toISOString(),
       status: "active",
       teacher_id: student.teacher_id // Ensure teacher_id is always sync
     })
@@ -173,6 +181,54 @@ export async function getActiveStudents(teacherId?: string): Promise<Subscriptio
 }
 
 export async function getStudentSubscription(studentId: string): Promise<SubscriptionRow | null> {
-  const students = await getSubscriptions();
-  return students.find((s: any) => s.id === studentId) || null;
+  // ⚠️ CRITICAL: Do NOT call getSubscriptions() here — it calls getStudents()
+  // which throws "Unauthorized" for student role. Query DB directly instead.
+  const admin = createAdminClient();
+
+  const [{ data: student }, { data: sub }] = await Promise.all([
+    admin.from("students").select("*").eq("id", studentId).single(),
+    admin.from("subscriptions").select("*").eq("student_id", studentId).maybeSingle(),
+  ]);
+
+  if (!student) return null;
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  let calculatedStatus: SubscriptionStatus = "inactive";
+  let daysRemaining = 0;
+
+  if (sub && sub.status === "active") {
+    const end = new Date(sub.end_date);
+    const diffTime = end.getTime() - today.getTime();
+    daysRemaining = Math.max(0, Math.ceil(diffTime / (1000 * 60 * 60 * 24)));
+    if (diffTime < 0) { calculatedStatus = "expired"; daysRemaining = 0; }
+    else if (daysRemaining <= 3) calculatedStatus = "expiring_soon";
+    else calculatedStatus = "active";
+  } else if (sub && sub.status === "inactive") {
+    calculatedStatus = "inactive";
+  }
+
+  return {
+    id: student.id,
+    teacherId: student.teacher_id,
+    name: student.name,
+    phone: student.phone,
+    parentPhone: student.parent_phone,
+    status: student.status,
+    stage: student.stage,
+    grade: student.grade,
+    gradeNumber: student.grade,
+    code: student.student_code ?? "",
+    subscription: sub ? {
+      studentId: sub.student_id,
+      teacherId: sub.teacher_id,
+      startDate: sub.start_date,
+      endDate: sub.end_date,
+      renewalDate: sub.renewal_date,
+      status: sub.status,
+    } : null,
+    calculatedStatus,
+    daysRemaining,
+  } as unknown as SubscriptionRow;
 }

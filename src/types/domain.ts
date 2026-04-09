@@ -8,6 +8,7 @@ export type Subscription = {
   studentId: string;
   startDate: string;
   endDate: string;
+  renewalDate?: string;
   status: "active" | "inactive";
   teacherId?: string;
 };
@@ -56,6 +57,7 @@ export type AddStudentPayload = {
   teacherId: string;
   inviteCode?: string;
   name: unknown;
+  email?: unknown;
   phone: unknown;
   parentPhone: unknown;
   stage?: unknown;
@@ -72,6 +74,7 @@ export type AddStudentPayload = {
 export type StudentRow = Record<string, unknown> & {
   id: string;
   teacherId: string;
+  email?: string;
   phone?: string;
   parentPhone?: string;
   password?: string;
@@ -79,9 +82,12 @@ export type StudentRow = Record<string, unknown> & {
   name?: string;
   locationId?: string;
   groupId?: string;
+  groupName?: string;
+  code?: string;
   gradeLabel?: string;
   grade?: number;
   gradeNumber?: number;
+  gradeCode?: string;
 };
 
 export type SubscriptionRow = StudentRow & {

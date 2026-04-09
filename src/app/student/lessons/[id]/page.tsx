@@ -1,20 +1,22 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useParams } from "next/navigation";
 import { getLessonById, type Lesson } from "@/app/actions/lessons";
-import { PlayCircle, FileText, HelpCircle, ArrowRight, Download, CheckCircle2, XCircle, Trophy } from "lucide-react";
+import { markLessonViewed, updateLessonProgress, getLessonProgress, type LessonProgress } from "@/app/actions/progress";
+import { PlayCircle, FileText, HelpCircle, ArrowRight, Download, CheckCircle2, XCircle, Trophy, Eye, Clock } from "lucide-react";
 import Link from "next/link";
 
 function getYouTubeEmbedUrl(url: string): string {
   const match = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&\s]+)/);
-  if (match) return `https://www.youtube.com/embed/${match[1]}?rel=0&modestbranding=1`;
+  if (match) return `https://www.youtube.com/embed/${match[1]}?rel=0&modestbranding=1&enablejsapi=1`;
   return url;
 }
 
 export default function StudentLessonPage() {
   const { id } = useParams<{ id: string }>();
   const [lesson, setLesson] = useState<Lesson | null>(null);
+  const [progress, setProgress] = useState<LessonProgress | null>(null);
   const [loading, setLoading] = useState(true);
 
   // Quiz state
@@ -22,12 +24,35 @@ export default function StudentLessonPage() {
   const [answers, setAnswers] = useState<(number | null)[]>([]);
   const [submitted, setSubmitted] = useState(false);
 
+  // Progress simulation (YouTube API not available in iframe sandbox easily)
+  const progressTimer = useRef<ReturnType<typeof setInterval> | null>(null);
+  const progressRef = useRef(0);
+
   useEffect(() => {
-    getLessonById(id).then((data) => {
+    Promise.all([getLessonById(id), getLessonProgress(id)]).then(([data, prog]) => {
       setLesson(data);
+      setProgress(prog);
       if (data) setAnswers(new Array(data.questions.length).fill(null));
       setLoading(false);
     });
+  }, [id]);
+
+  // Mark as viewed immediately on mount and simulate progress increment
+  useEffect(() => {
+    if (!id) return;
+    markLessonViewed(id).then(() => {
+      setProgress((prev) => prev ? { ...prev, hasViewed: true } : null);
+    });
+
+    // Simulate gradual progress tracking every 30s
+    progressTimer.current = setInterval(() => {
+      progressRef.current = Math.min(100, progressRef.current + 5);
+      updateLessonProgress(id, progressRef.current);
+    }, 30000);
+
+    return () => {
+      if (progressTimer.current) clearInterval(progressTimer.current);
+    };
   }, [id]);
 
   if (loading) {
@@ -43,7 +68,7 @@ export default function StudentLessonPage() {
       <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4 text-center">
         <PlayCircle className="w-16 h-16 text-gray-200" />
         <h2 className="text-xl font-black text-gray-400">الدرس غير موجود</h2>
-        <Link href="/dashboard/lessons" className="text-primary font-black underline underline-offset-4">العودة للدروس</Link>
+        <Link href="/student/lessons" className="text-primary font-black underline underline-offset-4">العودة للدروس</Link>
       </div>
     );
   }
@@ -58,12 +83,32 @@ export default function StudentLessonPage() {
     <div className="max-w-6xl mx-auto space-y-8 animate-in fade-in duration-500 pb-20">
       {/* Back */}
       <Link
-        href="/dashboard/lessons"
+        href="/student/lessons"
         className="inline-flex items-center gap-2 text-gray-400 hover:text-primary transition-colors font-bold text-sm"
       >
         <ArrowRight className="w-4 h-4" />
         العودة للدروس
       </Link>
+
+      {/* Progress badge (if viewed before) */}
+      {progress?.hasViewed && (
+        <div className="flex items-center gap-4 flex-wrap">
+          <span className="flex items-center gap-2 px-4 py-2 bg-emerald-50 text-emerald-700 rounded-full text-xs font-black">
+            <Eye className="w-3.5 h-3.5" /> تمت المشاهدة
+          </span>
+          {progress.progressPercentage > 0 && (
+            <div className="flex items-center gap-2">
+              <div className="h-2 w-32 bg-gray-100 rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-primary rounded-full transition-all duration-1000"
+                  style={{ width: `${progress.progressPercentage}%` }}
+                />
+              </div>
+              <span className="text-xs font-black text-primary">{progress.progressPercentage}%</span>
+            </div>
+          )}
+        </div>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Main: Video + Description */}
@@ -88,7 +133,7 @@ export default function StudentLessonPage() {
           </div>
 
           {/* Quiz Section */}
-          {lesson.questions.length > 0 && (
+          {total > 0 ? (
             <div className="bg-white rounded-[2rem] shadow-sm border border-gray-100 overflow-hidden">
               <div className="p-8 border-b border-gray-100 flex items-center gap-4">
                 <div className="w-12 h-12 bg-orange-100 text-orange-500 rounded-2xl flex items-center justify-center">
@@ -194,6 +239,11 @@ export default function StudentLessonPage() {
                   </button>
                 </div>
               )}
+            </div>
+          ) : (
+            <div className="bg-gray-50 rounded-[2rem] p-8 border border-gray-100 text-center text-gray-400">
+              <HelpCircle className="w-10 h-10 mx-auto mb-3 opacity-20" />
+              <p className="font-bold">لا توجد أسئلة لهذا الدرس</p>
             </div>
           )}
         </div>

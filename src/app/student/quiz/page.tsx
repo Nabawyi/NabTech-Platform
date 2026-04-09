@@ -14,7 +14,7 @@ export default function ComingSoonPage() {
         نظام الاختبارات قيد التطوير حاليًا لتقديم أفضل أداء لك. نرجو منك الانتظار قليلًا!
       </p>
       <Link
-        href="/dashboard"
+        href="/student"
         className="px-6 py-3 bg-primary text-white rounded-xl font-semibold hover:bg-primary/90 transition-all shadow-lg shadow-primary/20"
       >
         العودة للوحة الطالي

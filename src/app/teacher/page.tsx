@@ -7,7 +7,7 @@ import {
   CreditCard,
   AlertTriangle,
 } from "lucide-react";
-import { getDashboardStats } from "@/app/actions/dashboard";
+import { getDashboardStats } from "@/app/actions/stats";
 import { getTeacherSettings } from "@/app/actions/settings";
 
 export default async function TeacherDashboard() {

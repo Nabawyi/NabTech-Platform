@@ -6,6 +6,7 @@ import { getLocations, getGroupStudentCounts } from "@/app/actions/locations";
 import { getSubscriptions } from "@/app/actions/subscriptions";
 import { type SchoolLevel } from "@/lib/constants";
 import { studentHasCompleteStageGrade, type Stage } from "@/lib/education";
+import type { SubscriptionRow, StudentRow, AttendanceRecord, LocationRecord } from "@/types/domain";
 
 export type AttendanceInsights = {
   todayTotalRecords: number;
@@ -48,10 +49,10 @@ export async function getAttendanceStats(): Promise<AttendanceInsights> {
 
 export async function getSubscriptionStats(teacherId?: string): Promise<SubscriptionInsights & { inactiveSubscriptions: number }> {
   const subs = await getSubscriptions(teacherId);
-  const activeSubscriptions = subs.filter((s) => s.calculatedStatus === "active").length;
-  const expiredSubscriptions = subs.filter((s) => s.calculatedStatus === "expired").length;
-  const needingRenewal = subs.filter((s) => s.calculatedStatus === "expiring_soon").length;
-  const inactiveSubscriptions = subs.filter((s) => s.calculatedStatus === "inactive").length;
+  const activeSubscriptions = subs.filter((s: SubscriptionRow) => s.calculatedStatus === "active").length;
+  const expiredSubscriptions = subs.filter((s: SubscriptionRow) => s.calculatedStatus === "expired").length;
+  const needingRenewal = subs.filter((s: SubscriptionRow) => s.calculatedStatus === "expiring_soon").length;
+  const inactiveSubscriptions = subs.filter((s: SubscriptionRow) => s.calculatedStatus === "inactive").length;
 
   return {
     activeSubscriptions,
@@ -75,9 +76,9 @@ export async function getDashboardStats(teacherId?: string): Promise<DashboardSt
 
   const totalStudents = students.length;
   const activeStudents = subscriptions.filter(
-    (s) => s.calculatedStatus === "active" || s.calculatedStatus === "expiring_soon"
+    (s: SubscriptionRow) => s.calculatedStatus === "active" || s.calculatedStatus === "expiring_soon"
   ).length;
-  const inactiveStudents = subscriptions.filter((s) => s.calculatedStatus === "inactive").length;
+  const inactiveStudents = subscriptions.filter((s: SubscriptionRow) => s.calculatedStatus === "inactive").length;
 
   const studentsPerStage: Record<SchoolLevel, number> = {
     primary: 0,
@@ -85,14 +86,14 @@ export async function getDashboardStats(teacherId?: string): Promise<DashboardSt
     secondary: 0,
   };
 
-  students.forEach((s) => {
+  students.forEach((s: StudentRow) => {
     if (!studentHasCompleteStageGrade(s)) return;
     if (s.stage === "primary" || s.stage === "preparatory" || s.stage === "secondary") {
       studentsPerStage[s.stage as Stage] += 1;
     }
   });
 
-  const allGroups = locations.flatMap((l) => l.groups ?? []);
+  const allGroups = (locations as unknown as LocationRecord[]).flatMap((l) => l.groups ?? []);
   const totalGroups = allGroups.length;
   const emptyGroupIds = allGroups
     .filter((g) => (groupCounts[g.id] ?? 0) === 0)
@@ -100,20 +101,20 @@ export async function getDashboardStats(teacherId?: string): Promise<DashboardSt
   const emptyGroups = emptyGroupIds.length;
 
   const subscription = {
-    activeSubscriptions: subscriptions.filter((s) => s.calculatedStatus === "active").length,
-    expiredSubscriptions: subscriptions.filter((s) => s.calculatedStatus === "expired").length,
-    needingRenewal: subscriptions.filter((s) => s.calculatedStatus === "expiring_soon").length,
+    activeSubscriptions: subscriptions.filter((s: SubscriptionRow) => s.calculatedStatus === "active").length,
+    expiredSubscriptions: subscriptions.filter((s: SubscriptionRow) => s.calculatedStatus === "expired").length,
+    needingRenewal: subscriptions.filter((s: SubscriptionRow) => s.calculatedStatus === "expiring_soon").length,
   };
 
   const expiredStudents = subscriptions
-    .filter((s) => s.calculatedStatus === "expired")
+    .filter((s: SubscriptionRow) => s.calculatedStatus === "expired")
     .slice(0, 10)
-    .map((s) => ({ id: s.id, name: String(s.name ?? "") }));
+    .map((s: SubscriptionRow) => ({ id: s.id, name: String(s.name ?? "") }));
 
   const inactiveStudentsList = subscriptions
-    .filter((s) => s.calculatedStatus === "inactive")
+    .filter((s: SubscriptionRow) => s.calculatedStatus === "inactive")
     .slice(0, 10)
-    .map((s) => ({ id: s.id, name: String(s.name ?? "") }));
+    .map((s: SubscriptionRow) => ({ id: s.id, name: String(s.name ?? "") }));
 
   return {
     totalStudents,

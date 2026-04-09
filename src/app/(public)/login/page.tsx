@@ -9,7 +9,7 @@ import { loginUser } from "@/app/actions/students";
 
 export default function LoginPage() {
   const router = useRouter();
-  const [email, setEmail] = useState("");
+  const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState("");
@@ -20,7 +20,7 @@ export default function LoginPage() {
     setError("");
 
     try {
-      const res = await loginUser(email, password);
+      const res = await loginUser(identifier, password);
       
       if (res.error) {
         setError(res.error);
@@ -33,7 +33,7 @@ export default function LoginPage() {
       } else if (res.role === "admin") {
         router.push("/teacher");
       } else if (res.role === "student") {
-        router.push("/dashboard");
+        router.push("/student");
       }
     } catch (err) {
       console.error(err);
@@ -77,11 +77,11 @@ export default function LoginPage() {
               <input 
                 type="text" 
                 id="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                value={identifier}
+                onChange={(e) => setIdentifier(e.target.value)}
                 required 
                 className="w-full pl-4 pr-12 py-3 rounded-xl border border-gray-200 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all text-left"
-                placeholder="admin@genius.com"
+                placeholder="البريد أو رقم الهاتف"
                 dir="ltr"
               />
             </div>

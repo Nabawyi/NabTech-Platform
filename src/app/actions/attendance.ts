@@ -58,9 +58,26 @@ export async function getAttendanceByDate(date: string, teacherId?: string) {
   return records.filter((r) => r.date === normalizedDate);
 }
 
-export async function getStudentAttendance(studentId: string) {
-  const records = await getAttendance();
-  return records.filter((r: any) => r.studentId === studentId);
+export async function getStudentAttendance(studentId: string): Promise<AttendanceRecord[]> {
+  // ⚠️ Do NOT call getAttendance() — it fetches ALL teacher records then filters in memory.
+  // Query directly by student_id using admin to bypass RLS.
+  const admin = createAdminClient();
+  const { data, error } = await admin
+    .from("attendance")
+    .select("*")
+    .eq("student_id", studentId)
+    .order("date", { ascending: false });
+
+  if (error) return [];
+
+  return (data ?? []).map((r: any) => ({
+    id: r.id,
+    studentId: r.student_id,
+    teacherId: r.teacher_id,
+    date: r.date,
+    status: r.status,
+    createdAt: r.created_at,
+  })) as AttendanceRecord[];
 }
 
 export async function getAttendanceStats(teacherId?: string) {
@@ -105,7 +122,7 @@ export async function bulkMarkAttendance(idList: string[], date: string, teacher
   const results = { present: 0, absent: 0, invalid: [] as string[] };
 
   const rows = activeStudents.map((student: any) => {
-    const isPresent = idSet.has(student.id);
+    const isPresent = !!student.code && idSet.has(student.code);
     if (isPresent) results.present++;
     else results.absent++;
     return { student_id: student.id, teacher_id: teacherId, date: normalizedDate, status: isPresent ? "present" : "absent" };
@@ -113,8 +130,8 @@ export async function bulkMarkAttendance(idList: string[], date: string, teacher
 
   if (rows.length > 0) await admin.from("attendance").insert(rows);
 
-  const activeIds = new Set(activeStudents.map((s: any) => s.id));
-  idList.forEach((id) => { if (!activeIds.has(id)) results.invalid.push(id); });
+  const activeCodes = new Set(activeStudents.map((s: any) => s.code).filter(Boolean));
+  idList.forEach((code) => { if (!activeCodes.has(code)) results.invalid.push(code); });
 
   return results;
 }

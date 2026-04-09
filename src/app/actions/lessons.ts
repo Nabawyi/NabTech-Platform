@@ -60,6 +60,10 @@ export async function getLessons(teacherId?: string): Promise<Lesson[]> {
 
   if (effectiveTeacherId) query = query.eq("teacher_id", effectiveTeacherId);
 
+  if (session.role === "student") {
+    query = query.eq("stage", session.stage).eq("grade", session.gradeNumber);
+  }
+
   const { data, error } = await query;
   if (error) throw new Error(error.message);
   return (data ?? []).map(mapLesson);

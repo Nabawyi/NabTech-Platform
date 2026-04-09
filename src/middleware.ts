@@ -46,7 +46,7 @@ export async function middleware(request: NextRequest) {
 
   if (pathname.startsWith('/teacher') || pathname.startsWith('/admin')) {
     if (!user) return redirectTo('/login');
-    if (role === 'student') return redirectTo('/dashboard');
+    if (role === 'student') return redirectTo('/student');
     if (role === 'owner') return redirectTo('/owner');
     if (role !== 'teacher') return redirectTo('/login');
   }
@@ -55,7 +55,10 @@ export async function middleware(request: NextRequest) {
     if (!user) return redirectTo('/login');
     if (role === 'teacher') return redirectTo('/teacher');
     if (role === 'owner') return redirectTo('/owner');
-    if (role !== 'student') return redirectTo('/login');
+    if (role === 'student' || role === 'admin') {
+        return redirectTo(role === 'student' ? '/student' : '/teacher');
+    }
+    return redirectTo('/login');
   }
 
   if (
@@ -64,7 +67,7 @@ export async function middleware(request: NextRequest) {
   ) {
     if (role === 'owner') return redirectTo('/owner');
     if (role === 'teacher') return redirectTo('/teacher');
-    if (role === 'student') return redirectTo('/dashboard');
+    if (role === 'student') return redirectTo('/student');
   }
 
   return supabaseResponse;

@@ -194,7 +194,7 @@ export default function StudentsPage() {
       gradeFilter === "all" ? "all" : Number(gradeFilter);
     const byStageGrade = filterStudents(settingsFiltered as Record<string, unknown>[], {
       stage: stageParam,
-      grade: gradeParam,
+      gradeCode: gradeFilter,
     }) as SubscriptionRow[];
 
     return byStageGrade.filter((s) => {
@@ -221,11 +221,10 @@ export default function StudentsPage() {
     });
   };
 
-  // Grade options filtered by settings
-  const gradeOptions =
-    levelFilter === "all"
-      ? [...new Set(enabledLevels.flatMap((l) => getEnabledGradesForLevel(l.id)))]
-      : getEnabledGradesForLevel(levelFilter);
+  // Grade options from actual data
+  const gradeOptions = Array.from(new Map(
+    data.map(s => [s.gradeCode, s.gradeLabel || `صف ${s.gradeNumber}`])
+  )).sort((a, b) => String(a[0]).localeCompare(String(b[0])));
 
   const filtered = getFilteredStudents();
   
@@ -386,8 +385,8 @@ export default function StudentsPage() {
                   className="px-4 py-3 bg-gray-50 dark:bg-gray-700 rounded-2xl border-transparent outline-none font-bold text-xs text-gray-500 dark:text-gray-300"
                 >
                   <option value="all">كل الصفوف</option>
-                  {gradeOptions.map((n) => (
-                    <option key={n} value={String(n)}>صف {n}</option>
+                  {gradeOptions.map(([code, label]) => (
+                    <option key={String(code)} value={String(code)}>{String(label)}</option>
                   ))}
                 </select>
 
@@ -450,7 +449,7 @@ export default function StudentsPage() {
                   <tr key={student.id} className="group hover:bg-slate-50/50 dark:hover:bg-gray-700/30 transition-all duration-300">
                     <td className="px-6 py-5">
                       <span className="px-3 py-1 bg-slate-100 dark:bg-gray-700 text-slate-600 dark:text-gray-300 rounded-lg font-black text-xs tabular-nums">
-                        {String(student.code || student.id).substring(0, 8)}
+                        {student.code || student.id.slice(0, 8)}
                       </span>
                     </td>
                     <td className="px-6 py-5">
@@ -469,8 +468,9 @@ export default function StudentsPage() {
                        <p className="text-[10px] font-bold text-gray-400 dark:text-gray-500">الصف {String(student.grade ?? student.gradeNumber ?? "")}</p>
                     </td>
                     <td className="px-6 py-5">
-                      <p className="text-xs font-black text-slate-600 dark:text-gray-300">{getLocationName(student.groupId)}</p>
-                      <p className="text-[10px] font-bold text-gray-400 dark:text-gray-500">{getGroupName(student.groupId)}</p>
+                      <p className="text-xs font-black text-slate-800 dark:text-gray-100">
+                        {student.groupName || "بدون مجموعة"}
+                      </p>
                       <button onClick={() => setChangeGroupStudent(student)} className="text-[9px] font-black text-primary hover:underline mt-1 block">تغيير</button>
                     </td>
                     <td className="px-6 py-5 space-y-2">
