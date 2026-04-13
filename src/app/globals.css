@@ -44,8 +44,8 @@
 ══════════════════════════════════════════════════════════════ */
 :root {
   /* Brand */
-  --primary:       #e53e3e;
-  --primary-hover: #c53030;
+  --primary:       #2563eb; /* blue-600 */
+  --primary-hover: #1d4ed8; /* blue-700 */
 
   /* Layout */
   --bg:          #f8fafc;
@@ -66,9 +66,9 @@
    DARK THEME
 ══════════════════════════════════════════════════════════════ */
 :root.dark {
-  /* Brand - Brighter, more saturated red for dark mode contrast */
-  --primary:       #ff5c5c;
-  --primary-hover: #ff7171;
+  /* Brand - Brighter, more saturated blue for dark mode contrast */
+  --primary:       #3b82f6; /* blue-500 */
+  --primary-hover: #60a5fa; /* blue-400 */
 
   /* Layout — Slate dark mode */
   --bg:          #0b0f19;
