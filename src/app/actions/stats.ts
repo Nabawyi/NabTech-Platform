@@ -20,14 +20,24 @@ export type SubscriptionInsights = {
   needingRenewal: number; // expiring_soon
 };
 
+export type GradeStat = {
+  code: string;
+  label: string;
+  count: number;
+  percentage: number;
+  levelName: string;
+};
+
 export type DashboardStats = {
   totalStudents: number;
   activeStudents: number;
   inactiveStudents: number;
+  pendingStudentsCount: number;
 
   totalGroups: number;
   emptyGroups: number;
-  studentsPerStage: Record<SchoolLevel, number>;
+  
+  gradeStats: GradeStat[];
 
   attendance: AttendanceInsights;
   subscription: SubscriptionInsights;
@@ -36,6 +46,7 @@ export type DashboardStats = {
     inactiveStudents: Array<{ id: string; name: string }>;
     emptyGroupIds: string[];
   };
+  recentStudents: Array<StudentRow>;
 };
 
 export async function getAttendanceStats(): Promise<AttendanceInsights> {
@@ -62,7 +73,10 @@ export async function getSubscriptionStats(teacherId?: string): Promise<Subscrip
   };
 }
 
-export async function getDashboardStats(teacherId?: string): Promise<DashboardStats> {
+export async function getDashboardStats(teacherId?: string, clientGradeCodes?: string[]): Promise<DashboardStats> {
+  const { unstable_noStore: noStore } = await import("next/cache");
+  noStore(); // Disable all Next.js caching for this request to ensure fresh data always
+
   const session = await getUserSession();
   if (!session || session.role === "student") throw new Error("Unauthorized");
 
@@ -74,23 +88,45 @@ export async function getDashboardStats(teacherId?: string): Promise<DashboardSt
     getGroupStudentCounts(teacherId),
   ]);
 
+  const { getTeacherSettings } = await import("./settings");
+  // Always use the latest client-provided codes if available to prevent any caching desyncs
+  const settings = await getTeacherSettings(teacherId);
+  const effectiveGradeCodes = clientGradeCodes && clientGradeCodes.length > 0 
+    ? clientGradeCodes 
+    : settings.enabled_grade_codes;
+
   const totalStudents = students.length;
+  const pendingStudentsCount = students.filter(s => s.status === "pending").length;
   const activeStudents = subscriptions.filter(
     (s: SubscriptionRow) => s.calculatedStatus === "active" || s.calculatedStatus === "expiring_soon"
   ).length;
   const inactiveStudents = subscriptions.filter((s: SubscriptionRow) => s.calculatedStatus === "inactive").length;
 
-  const studentsPerStage: Record<SchoolLevel, number> = {
-    primary: 0,
-    preparatory: 0,
-    secondary: 0,
-  };
-
-  students.forEach((s: StudentRow) => {
-    if (!studentHasCompleteStageGrade(s)) return;
-    if (s.stage === "primary" || s.stage === "preparatory" || s.stage === "secondary") {
-      studentsPerStage[s.stage as Stage] += 1;
+  // Group students by grade_code
+  const countsByGrade: Record<string, number> = {};
+  students.forEach((s) => {
+    if (s.gradeCode) {
+      countsByGrade[s.gradeCode] = (countsByGrade[s.gradeCode] || 0) + 1;
     }
+  });
+
+  // Build grade stats based on what's ENABLED in settings
+  // This ensures the dashboard reflects settings exactly
+  const { getGradeLabel } = await import("@/lib/constants");
+  
+  const gradeStats: GradeStat[] = effectiveGradeCodes.map(code => {
+    const parts = code.split("_"); // pri_1, pre_1, sec_1
+    const stage = parts[0] === "pri" ? "primary" : parts[0] === "pre" ? "preparatory" : "secondary";
+    const num = parseInt(parts[1], 10);
+    const count = countsByGrade[code] || 0;
+    
+    return {
+      code,
+      label: getGradeLabel(stage as any, num),
+      levelName: stage === "primary" ? "الابتدائي" : stage === "preparatory" ? "الإعدادي" : "الثانوي",
+      count,
+      percentage: totalStudents > 0 ? (count / totalStudents) * 100 : 0
+    };
   });
 
   const allGroups = (locations as unknown as LocationRecord[]).flatMap((l) => l.groups ?? []);
@@ -116,13 +152,16 @@ export async function getDashboardStats(teacherId?: string): Promise<DashboardSt
     .slice(0, 10)
     .map((s: SubscriptionRow) => ({ id: s.id, name: String(s.name ?? "") }));
 
+  const recentStudents = students.slice(0, 5);
+
   return {
     totalStudents,
     activeStudents,
     inactiveStudents,
+    pendingStudentsCount,
     totalGroups,
     emptyGroups,
-    studentsPerStage,
+    gradeStats,
     attendance: {
       todayTotalRecords: attendanceStats.todayTotalRecords ?? 0,
       todayAbsent: attendanceStats.todayAbsent ?? 0,
@@ -134,6 +173,7 @@ export async function getDashboardStats(teacherId?: string): Promise<DashboardSt
       inactiveStudents: inactiveStudentsList,
       emptyGroupIds,
     },
+    recentStudents,
   };
 }
 

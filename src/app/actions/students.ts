@@ -399,4 +399,21 @@ export async function deleteAllStudents(teacherId?: string): Promise<{ success: 
   return { success: true, deletedCount: toDelete.length };
 }
 
+export async function getGradesWithStudents(): Promise<string[]> {
+  const session = await getUserSession();
+  if (!session || session.role !== "admin") return [];
+  const admin = createAdminClient();
+  const { data } = await admin
+    .from("students")
+    .select("grade_code")
+    .eq("teacher_id", session.teacherId);
+  if (!data) return [];
+  
+  const codes = new Set<string>();
+  data.forEach((r: any) => {
+    if (r.grade_code) codes.add(r.grade_code);
+  });
+  return Array.from(codes);
+}
+
 export { validateEgyptianPhone };

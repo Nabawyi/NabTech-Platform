@@ -29,6 +29,9 @@ const defaultSettings: Omit<TeacherSettings, "id" | "name" | "inviteCode"> = {
 // ─── Get settings for current teacher ────────────────────────────────────────
 
 export async function getTeacherSettings(teacherId?: string): Promise<TeacherSettings> {
+  const { unstable_noStore: noStore } = await import("next/cache");
+  noStore(); // Disable all Next.js caching for this request to ensure fresh data always
+
   const session = await getUserSession();
   const id = teacherId ?? session?.teacherId ?? "";
   if (!id) return { ...defaultSettings, id: "", name: "مدرس", inviteCode: "" };
@@ -79,14 +82,48 @@ export async function updateTeacherSettings(newSettings: Partial<TeacherSettings
   const teacherId = session?.teacherId;
   if (!teacherId) throw new Error("Unauthorized");
 
+  console.log("[updateTeacherSettings] Triggered for teacher:", teacherId);
+
   const admin = createAdminClient();
-  await admin.from("teacher_settings").upsert({
+  
+  // 1. Fetch current settings to perform a clean merge
+  const { data: current } = await admin
+    .from("teacher_settings")
+    .select("*")
+    .eq("teacher_id", teacherId)
+    .maybeSingle();
+
+  // 2. Prepare payload for UPSERT
+  const payload = {
     teacher_id: teacherId,
-    dark_mode: newSettings.dark_mode,
-    enabled_levels: newSettings.enabled_levels,
-    enabled_grades: newSettings.enabled_grades,
-    enabled_grade_codes: newSettings.enabled_grade_codes,
-  }, { onConflict: "teacher_id" });
+    dark_mode: newSettings.dark_mode ?? current?.dark_mode ?? defaultSettings.dark_mode,
+    enabled_levels: newSettings.enabled_levels ?? current?.enabled_levels ?? defaultSettings.enabled_levels,
+    enabled_grades: newSettings.enabled_grades ?? current?.enabled_grades ?? defaultSettings.enabled_grades,
+    enabled_grade_codes: newSettings.enabled_grade_codes ?? current?.enabled_grade_codes ?? defaultSettings.enabled_grade_codes,
+    updated_at: new Date().toISOString(),
+  };
+
+  console.log("[updateTeacherSettings] Payload prepared:", payload);
+
+  // 3. Perform UPSERT with conflict on teacher_id
+  const response = await admin
+    .from("teacher_settings")
+    .upsert(payload, { onConflict: "teacher_id" })
+    .select();
+
+  console.log("[updateTeacherSettings] Supabase Raw Response:", response);
+
+  if (response.error) {
+    console.error("[updateTeacherSettings] Error saving to Supabase:", response.error);
+    throw new Error(`Failed to save settings: ${response.error.message}`);
+  }
+
+  // 4. Force cache invalidation
+  const { revalidatePath } = await import("next/cache");
+  revalidatePath("/teacher");
+  revalidatePath("/teacher/settings");
+
+  console.log("[updateTeacherSettings] Revalidation triggered for /teacher");
 
   return getTeacherSettings(teacherId);
 }

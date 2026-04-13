@@ -2,17 +2,26 @@
 
 import { useSettings } from "@/components/providers/SettingsProvider";
 import { updateTeacherSettings } from "@/app/actions/settings";
-import { useState } from "react";
+import { getGradesWithStudents } from "@/app/actions/students";
+import { useState, useEffect } from "react";
 import { Moon, Sun, Save, GraduationCap, Check, Loader2, CheckCircle } from "lucide-react";
 
 import { EDUCATION_LEVELS, getGradeCode } from "@/lib/constants";
 
 
+import { useRouter } from "next/navigation";
+
 export default function SettingsPage() {
+  const router = useRouter();
   const { settings, setSettings, toggleDarkMode, isGradeCodeEnabled, isLevelEnabled } = useSettings();
   const [isSaving, setIsSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [activeGrades, setActiveGrades] = useState<string[]>([]);
+
+  useEffect(() => {
+    getGradesWithStudents().then(setActiveGrades);
+  }, []);
 
   const handleCopyCode = () => {
     navigator.clipboard.writeText(settings.inviteCode);
@@ -23,7 +32,15 @@ export default function SettingsPage() {
   const handleToggleGrade = (stageId: string, gradeNum: number) => {
     const code = getGradeCode(stageId as any, gradeNum);
     const current = [...settings.enabled_grade_codes];
-    const next = current.includes(code)
+    const isCurrentlyEnabled = current.includes(code);
+
+    // Prevent disabling if there are students
+    if (isCurrentlyEnabled && activeGrades.includes(code)) {
+      alert("لا يمكن إلغاء تفعيل هذا الصف لوجود طلاب مسجلين به!");
+      return;
+    }
+
+    const next = isCurrentlyEnabled
       ? current.filter((c) => c !== code)
       : [...current, code];
     
@@ -38,11 +55,37 @@ export default function SettingsPage() {
 
 
   const handleToggleLevel = (stageId: string) => {
+    const isCurrentlyEnabled = settings.enabled_levels.includes(stageId as any);
+
+    // Prevent disabling if any grade in this level has students
+    if (isCurrentlyEnabled) {
+      const stageConfig = EDUCATION_LEVELS.find((l) => l.id === stageId);
+      if (stageConfig) {
+        const stageCodes = stageConfig.grades.map(g => g.code);
+        const hasStudents = stageCodes.some(c => activeGrades.includes(c));
+        if (hasStudents) {
+          alert("لا يمكن إلغاء هذه المرحلة بالكامل لوجود طلاب في بعض صفوفها!");
+          return;
+        }
+      }
+    }
+
     const current = [...settings.enabled_levels];
-    const next = current.includes(stageId as any)
+    const next = isCurrentlyEnabled
       ? current.filter((l) => l !== stageId)
       : [...current, stageId as any];
-    setSettings({ ...settings, enabled_levels: next });
+    
+    // Crucial fixed logic: When toggling a level off, we MUST also remove its grade codes from enabled_grade_codes
+    let nextCodes = [...settings.enabled_grade_codes];
+    if (isCurrentlyEnabled) {
+      const stageConfig = EDUCATION_LEVELS.find((l) => l.id === stageId);
+      if (stageConfig) {
+        const stageCodes = stageConfig.grades.map(g => g.code);
+        nextCodes = nextCodes.filter(c => !stageCodes.includes(c));
+      }
+    }
+
+    setSettings({ ...settings, enabled_levels: next, enabled_grade_codes: nextCodes });
   };
 
   const handleSave = async () => {
@@ -58,6 +101,9 @@ export default function SettingsPage() {
       });
       setSaved(true);
       setTimeout(() => setSaved(false), 2000);
+      
+      // Tell Next.js to refresh active routes and purge client cache
+      router.refresh();
     } catch (err) {
       console.error("Failed to save settings:", err);
     } finally {

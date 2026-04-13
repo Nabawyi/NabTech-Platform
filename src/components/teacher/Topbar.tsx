@@ -1,83 +1,67 @@
 "use client";
 
-import { Bell, Moon, Sun } from "lucide-react";
+import { Bell, Moon, Sun, Menu, ChevronLeft } from "lucide-react";
 import { useSettings } from "@/components/providers/SettingsProvider";
+import { usePathname } from "next/navigation";
 
 export default function TeacherTopbar() {
   const { settings, toggleDarkMode } = useSettings();
+  const pathname = usePathname();
   const isDark = settings.dark_mode;
 
+  const getPageTitle = () => {
+    if (pathname === "/teacher") return "لوحة التحكم";
+    if (pathname.includes("/students")) return "إدارة الطلاب";
+    if (pathname.includes("/subscriptions")) return "الاشتراكات";
+    if (pathname.includes("/attendance")) return "الحضور";
+    if (pathname.includes("/groups")) return "المجموعات";
+    if (pathname.includes("/lessons")) return "الدروس";
+    if (pathname.includes("/settings")) return "الإعدادات";
+    return "لوحة التحكم";
+  };
+
   return (
-    <header
-      className="
-        h-20 bg-card border-b border-card-border
-        flex items-center justify-between px-6
-        sticky top-0 z-30
-      "
-    >
-      {/* Left — title */}
-      <div className="flex items-center gap-4">
-        <div className="hidden sm:flex border-l border-card-border pl-4">
-          <h2 className="text-xl font-black text-foreground">لوحة تحكم المعلم</h2>
-        </div>
-      </div>
-
-      {/* Right — actions */}
-      <div className="flex items-center gap-3">
-
-        {/* ── Dark Mode Toggle ──────────────────────────────── */}
-        <button
-          onClick={toggleDarkMode}
-          className="relative inline-flex h-8 w-14 shrink-0 cursor-pointer items-center justify-center rounded-full transition-colors duration-200 ease-in-out focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-card"
-          style={{ backgroundColor: isDark ? "#3b82f6" : "#e2e8f0" }}
-          role="switch"
-          aria-checked={isDark}
-        >
-          <span className="sr-only">{isDark ? "تفعيل الوضع الفاتح" : "تفعيل الوضع الداكن"}</span>
-          <span
-            className={`pointer-events-none relative inline-block h-6 w-6 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
-              isDark ? "-translate-x-3" : "translate-x-3"
-            }`}
-          >
-            <span
-              className={`absolute inset-0 flex h-full w-full items-center justify-center transition-opacity duration-200 ease-in ${
-                isDark ? "opacity-0" : "opacity-100"
-              }`}
-              aria-hidden="true"
-            >
-              <Sun className="h-3.5 w-3.5 text-amber-500" />
-            </span>
-            <span
-              className={`absolute inset-0 flex h-full w-full items-center justify-center transition-opacity duration-200 ease-in ${
-                isDark ? "opacity-100" : "opacity-0"
-              }`}
-              aria-hidden="true"
-            >
-              <Moon className="h-3.5 w-3.5 text-indigo-600" />
-            </span>
-          </span>
-        </button>
-
-        {/* Divider */}
-        <div className="w-px h-8 bg-card-border" />
-
-        {/* Notifications */}
-        <button className="relative p-2 rounded-full hover:bg-muted transition-colors">
-          <Bell className="w-5 h-5 text-muted-fg" />
-          <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-danger-fg border-2 border-card rounded-full" />
-        </button>
-
-        {/* Divider */}
-        <div className="w-px h-8 bg-card-border" />
-
-        {/* User avatar — synced with settings.name */}
-        <div className="flex items-center gap-3">
-          <div className="text-right hidden sm:block">
-            <p className="text-sm font-bold text-foreground leading-tight">{settings.name || "المعلم"}</p>
-            <p className="text-xs text-muted-fg">المدير العام</p>
+    <header className="sticky top-0 z-40 w-full bg-white/40 dark:bg-slate-900/40 backdrop-blur-md border-b border-slate-200/50 dark:border-slate-800/50 transition-colors duration-300">
+      <div className="px-6 md:px-10 h-16 flex items-center justify-between">
+        {/* Left: Indicator & Title */}
+        <div className="flex items-center gap-6">
+          <button className="p-2 md:hidden hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors">
+            <Menu className="w-5 h-5 text-slate-500" />
+          </button>
+          
+          <div className="flex items-center gap-3">
+            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest hidden sm:block">NabTech</span>
+            <ChevronLeft className="w-3 h-3 text-slate-300 hidden sm:block" />
+            <h2 className="text-sm font-black text-slate-900 dark:text-white tracking-tight">
+              {getPageTitle()}
+            </h2>
           </div>
-          <div className="w-9 h-9 rounded-full bg-primary text-white flex items-center justify-center font-black text-sm select-none">
-            {(settings.name || "م").charAt(0)}
+        </div>
+
+        {/* Right: Actions */}
+        <div className="flex items-center gap-4">
+          <button
+            onClick={toggleDarkMode}
+            className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-all text-slate-500"
+          >
+            {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+          </button>
+
+          <button className="relative w-8 h-8 flex items-center justify-center rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-all text-slate-500">
+            <Bell className="w-4 h-4" />
+            <span className="absolute top-2 right-2 w-1.5 h-1.5 bg-rose-500 rounded-full" />
+          </button>
+
+          <div className="h-4 w-px bg-slate-200 dark:bg-slate-800 mx-1" />
+
+          {/* Profile Minimal */}
+          <div className="flex items-center gap-3 pl-1">
+            <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary font-black text-xs">
+              {(settings.name || "م").charAt(0)}
+            </div>
+            <span className="text-xs font-bold text-slate-600 dark:text-slate-300 hidden md:block">
+              {settings.name || "المعلم"}
+            </span>
           </div>
         </div>
       </div>
