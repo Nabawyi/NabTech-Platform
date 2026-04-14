@@ -26,7 +26,7 @@ export default function Sidebar() {
     <aside className="w-64 bg-card border-l border-card-border hidden md:flex flex-col h-full sticky top-0 z-40 shadow-sm">
       <div className="p-8">
         <Link href="/student" className="block">
-          <Logo className="origin-right scale-90 dark:brightness-0 dark:invert" />
+          <Logo className="origin-right scale-90 text-foreground" />
         </Link>
       </div>
 

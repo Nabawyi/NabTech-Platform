@@ -14,7 +14,7 @@ export default async function Navbar() {
       <div className="container mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
         {/* Logo */}
         <Link href={logoHref}>
-          <Logo className="brightness-0 invert" />
+          <Logo className="text-white" />
         </Link>
         
         {/* Actions */}

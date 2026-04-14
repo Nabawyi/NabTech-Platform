@@ -11,6 +11,9 @@ const cairo = Cairo({
 export const metadata: Metadata = {
   title: "NabTech | منصة ناب تك التعليمية",
   description: "المنصة التعليمية الأولى لخدمات التعلم المتقدمة",
+  icons: {
+    icon: "/favicon.ico",
+  },
 };
 
 import ThemeProvider from "@/components/ThemeProvider";

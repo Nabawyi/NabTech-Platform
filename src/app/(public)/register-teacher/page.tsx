@@ -101,17 +101,17 @@ export default function RegisterTeacherPage() {
   if (isSuccess) {
     return (
       <div
-        className="min-h-[calc(100vh-4rem)] flex items-center justify-center bg-gray-50/50 p-4"
+        className="min-h-[calc(100vh-4rem)] flex items-center justify-center bg-white dark:bg-[#0B0F19] p-4 transition-colors duration-300"
         dir="rtl"
       >
-        <div className="max-w-md w-full bg-white rounded-[3rem] shadow-2xl p-12 text-center animate-in zoom-in duration-500">
-          <div className="w-24 h-24 bg-emerald-100 text-emerald-500 rounded-[2rem] flex items-center justify-center mx-auto mb-8">
+        <div className="max-w-md w-full bg-white dark:bg-gray-900 rounded-[3rem] shadow-2xl p-12 text-center animate-in zoom-in duration-500 border border-gray-100 dark:border-gray-800">
+          <div className="w-24 h-24 bg-emerald-100 dark:bg-emerald-500/10 text-emerald-500 dark:text-emerald-400 rounded-[2rem] flex items-center justify-center mx-auto mb-8">
             <CheckCircle2 className="w-12 h-12" />
           </div>
-          <h2 className="text-3xl font-black text-slate-800 mb-4">
+          <h2 className="text-3xl font-black text-gray-900 dark:text-white mb-4">
             تم إرسال طلبك بنجاح!
           </h2>
-          <p className="text-gray-400 font-bold mb-10 leading-relaxed text-lg">
+          <p className="text-gray-500 dark:text-gray-400 font-bold mb-10 leading-relaxed text-lg">
             سيتم مراجعة طلبك من قبل إدارة المنصة وإشعارك عند الموافقة.
             <br />
             <span className="text-primary font-black">
@@ -122,7 +122,7 @@ export default function RegisterTeacherPage() {
             href="/login"
             className="inline-flex items-center justify-center gap-3 w-full py-5 rounded-2xl bg-primary text-white font-black hover:scale-105 active:scale-95 transition-all shadow-xl shadow-primary/20"
           >
-            <ArrowRight className="w-6 h-6" />
+            <ArrowRight className="w-6 h-6 mr-1" />
             العودة لتسجيل الدخول
           </Link>
         </div>
@@ -132,15 +132,15 @@ export default function RegisterTeacherPage() {
 
   return (
     <div
-      className="min-h-[calc(100vh-4rem)] flex items-center justify-center bg-gray-50/50 p-4 sm:p-8 relative overflow-hidden"
+      className="min-h-[calc(100vh-4rem)] flex items-center justify-center bg-white dark:bg-[#0B0F19] p-4 sm:p-8 relative overflow-hidden transition-colors duration-300"
       dir="rtl"
     >
       {/* Decorative Blob */}
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-primary/5 rounded-full blur-[100px] -z-10 pointer-events-none" />
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-primary/5 dark:bg-primary/10 rounded-full blur-[100px] -z-10 pointer-events-none" />
 
-      <div className="max-w-lg w-full bg-white rounded-3xl shadow-xl overflow-hidden border border-gray-100 animate-in zoom-in-95 duration-500">
+      <div className="max-w-lg w-full bg-white dark:bg-gray-900 rounded-3xl shadow-xl dark:shadow-2xl overflow-hidden border border-gray-100 dark:border-gray-800 animate-in zoom-in-95 duration-500">
         {/* Header */}
-        <div className="bg-slate-900 p-8 text-center text-white relative overflow-hidden">
+        <div className="bg-slate-900 dark:bg-slate-950 p-8 text-center text-white relative overflow-hidden">
           <div className="absolute inset-0 bg-primary/20 mix-blend-overlay" />
           <div className="w-16 h-16 bg-white/10 rounded-2xl flex items-center justify-center mx-auto mb-4 relative z-10 backdrop-blur-sm border border-white/10">
             <GraduationCap className="w-8 h-8 text-white" />
@@ -156,7 +156,7 @@ export default function RegisterTeacherPage() {
         {/* Form */}
         <form onSubmit={handleSubmit} className="p-8 space-y-6">
           {error && (
-            <div className="bg-red-50 text-red-600 text-sm font-bold p-4 rounded-xl flex items-center gap-2">
+            <div className="bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400 text-sm font-bold p-4 rounded-xl flex items-center gap-2 border border-red-100 dark:border-red-500/20">
               <ShieldCheck className="w-5 h-5 shrink-0" />
               {error}
             </div>
@@ -164,7 +164,7 @@ export default function RegisterTeacherPage() {
 
           {/* Name */}
           <div className="space-y-2">
-            <label className="text-sm font-black text-slate-500 flex items-center gap-2">
+            <label className="text-sm font-black text-gray-700 dark:text-gray-300 flex items-center gap-2">
               <User className="w-4 h-4 text-primary" />
               الاسم بالكامل
             </label>
@@ -173,14 +173,14 @@ export default function RegisterTeacherPage() {
               required
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className="w-full px-6 py-4 rounded-2xl bg-slate-50 border-2 border-transparent focus:bg-white focus:border-primary outline-none font-bold transition-all shadow-sm"
+              className="w-full px-6 py-4 rounded-2xl bg-slate-50 dark:bg-gray-800 border-2 border-transparent focus:bg-white dark:focus:bg-gray-800 focus:border-primary outline-none font-bold text-gray-900 dark:text-gray-100 transition-all duration-200 shadow-sm"
               placeholder="مثال: د. محمد أحمد"
             />
           </div>
 
           {/* Email */}
           <div className="space-y-2">
-            <label className="text-sm font-black text-slate-500 flex items-center gap-2">
+            <label className="text-sm font-black text-gray-700 dark:text-gray-300 flex items-center gap-2">
               <Mail className="w-4 h-4 text-primary" />
               البريد الإلكتروني
             </label>
@@ -192,16 +192,16 @@ export default function RegisterTeacherPage() {
                 setEmail(e.target.value);
                 if (e.target.value.length > 3) validateEmail(e.target.value);
               }}
-              className={`w-full px-6 py-4 rounded-2xl bg-slate-50 border-2 ${
+              className={`w-full px-6 py-4 rounded-2xl bg-slate-50 dark:bg-gray-800 border-2 ${
                 emailError
-                  ? "border-red-400 bg-red-50/50"
+                  ? "border-red-400 bg-red-50/50 dark:bg-red-500/10"
                   : "border-transparent"
-              } focus:bg-white focus:border-primary outline-none font-bold transition-all shadow-sm text-left`}
+              } focus:bg-white dark:focus:bg-gray-800 focus:border-primary outline-none font-bold text-gray-900 dark:text-gray-100 transition-all duration-200 shadow-sm text-left`}
               placeholder="teacher@example.com"
               dir="ltr"
             />
             {emailError && (
-              <p className="text-xs font-bold text-red-500 flex items-center gap-1">
+              <p className="text-xs font-bold text-red-500 dark:text-red-400 flex items-center gap-1">
                 <AlertCircle className="w-3 h-3" />
                 {emailError}
               </p>
@@ -210,7 +210,7 @@ export default function RegisterTeacherPage() {
 
           {/* Phone */}
           <div className="space-y-2">
-            <label className="text-sm font-black text-slate-500 flex items-center gap-2">
+            <label className="text-sm font-black text-gray-700 dark:text-gray-300 flex items-center gap-2">
               <Phone className="w-4 h-4 text-primary" />
               رقم الهاتف (واتساب)
             </label>
@@ -228,15 +228,15 @@ export default function RegisterTeacherPage() {
                   setPhoneError("رقم الهاتف مطلوب");
                 }
               }}
-              className={`w-full px-6 py-4 rounded-2xl bg-slate-50 border-2 ${
+              className={`w-full px-6 py-4 rounded-2xl bg-slate-50 dark:bg-gray-800 border-2 ${
                 phoneError
-                  ? "border-red-400 bg-red-50/50"
+                  ? "border-red-400 bg-red-50/50 dark:bg-red-500/10"
                   : "border-transparent"
-              } focus:bg-white focus:border-primary outline-none font-bold transition-all shadow-sm text-center ltr tabular-nums`}
+              } focus:bg-white dark:focus:bg-gray-800 focus:border-primary outline-none font-bold text-gray-900 dark:text-gray-100 transition-all duration-200 shadow-sm text-center ltr tabular-nums`}
               placeholder="01xxxxxxxxx"
             />
             {phoneError && (
-              <p className="text-xs font-bold text-red-500 flex items-center gap-1">
+              <p className="text-xs font-bold text-red-500 dark:text-red-400 flex items-center gap-1">
                 <AlertCircle className="w-3 h-3" />
                 {phoneError}
               </p>
@@ -246,7 +246,7 @@ export default function RegisterTeacherPage() {
           {/* Password */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <label className="text-sm font-black text-slate-500 flex items-center gap-2">
+              <label className="text-sm font-black text-gray-700 dark:text-gray-300 flex items-center gap-2">
                 <Key className="w-4 h-4 text-primary" />
                 كلمة المرور
               </label>
@@ -255,12 +255,12 @@ export default function RegisterTeacherPage() {
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full px-6 py-4 rounded-2xl bg-slate-50 border-2 border-transparent focus:bg-white focus:border-primary outline-none font-bold transition-all shadow-sm text-center"
+                className="w-full px-6 py-4 rounded-2xl bg-slate-50 dark:bg-gray-800 border-2 border-transparent focus:bg-white dark:focus:bg-gray-800 focus:border-primary outline-none font-bold text-gray-900 dark:text-gray-100 transition-all duration-200 shadow-sm text-center"
                 placeholder="••••••••"
               />
             </div>
             <div className="space-y-2">
-              <label className="text-sm font-black text-slate-500 flex items-center gap-2">
+              <label className="text-sm font-black text-gray-700 dark:text-gray-300 flex items-center gap-2">
                 <Key className="w-4 h-4 text-emerald-500" />
                 تأكيد كلمة المرور
               </label>
@@ -269,13 +269,13 @@ export default function RegisterTeacherPage() {
                 required
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
-                className="w-full px-6 py-4 rounded-2xl bg-slate-50 border-2 border-transparent focus:bg-white focus:border-primary outline-none font-bold transition-all shadow-sm text-center"
+                className="w-full px-6 py-4 rounded-2xl bg-slate-50 dark:bg-gray-800 border-2 border-transparent focus:bg-white dark:focus:bg-gray-800 focus:border-primary outline-none font-bold text-gray-900 dark:text-gray-100 transition-all duration-200 shadow-sm text-center"
                 placeholder="••••••••"
               />
             </div>
           </div>
           {passwordError && (
-            <p className="text-xs font-bold text-red-500 flex items-center gap-1">
+            <p className="text-xs font-bold text-red-500 dark:text-red-400 flex items-center gap-1">
               <AlertCircle className="w-3 h-3" />
               {passwordError}
             </p>
@@ -296,16 +296,16 @@ export default function RegisterTeacherPage() {
         </form>
 
         {/* Footer */}
-        <div className="p-6 border-t border-gray-100 bg-gray-50 text-center">
-          <p className="text-sm font-medium text-gray-600 mb-3">
+        <div className="p-6 border-t border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-900/50 text-center">
+          <p className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-3">
             لديك حساب بالفعل؟
           </p>
           <Link
             href="/login"
-            className="inline-flex items-center justify-center gap-2 w-full py-3 rounded-xl bg-white border border-gray-200 text-foreground font-bold hover:border-primary hover:text-primary transition-colors"
+            className="inline-flex items-center justify-center gap-2 w-full py-3 rounded-xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-900 dark:text-gray-100 font-bold hover:border-primary dark:hover:border-primary hover:text-primary dark:hover:text-primary transition-all duration-200"
           >
             تسجيل الدخول
-            <ArrowRight className="w-4 h-4" />
+            <ArrowRight className="w-4 h-4 mr-1" />
           </Link>
         </div>
       </div>

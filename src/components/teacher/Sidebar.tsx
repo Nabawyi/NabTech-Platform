@@ -31,7 +31,7 @@ export default function TeacherSidebar() {
   return (
     <aside className="w-64 bg-slate-900 text-slate-300 hidden md:flex flex-col h-full sticky top-0">
       <div className="p-6">
-        <div className="brightness-0 invert opacity-90 transition-opacity hover:opacity-100">
+        <div className="text-white opacity-90 transition-opacity hover:opacity-100">
           <Link href="/teacher">
             <Logo className="origin-right scale-75 xl:scale-90" />
           </Link>

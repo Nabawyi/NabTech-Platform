@@ -13,7 +13,7 @@ export default function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-12 gap-12 mb-16">
           <div className="col-span-1 md:col-span-5 text-right space-y-6">
             <Link href="/" className="inline-block">
-              <Logo />
+              <Logo className="text-foreground" />
             </Link>
             <p className="text-gray-500 dark:text-gray-400 font-medium leading-relaxed max-w-sm">
               NabTech هي المنصة الأولى المتخصصة لمساعدة المعلمين في إدارة دروسهم وطلابهم واشتراكاتهم بكل احترافية وأمان، مصممة بأحدث التقنيات وأفضل تجربة مستخدم.

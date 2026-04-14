@@ -43,13 +43,13 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-[calc(100vh-4rem)] flex items-center justify-center bg-gray-50/50 p-4 sm:p-8 relative overflow-hidden">
+    <div className="min-h-[calc(100vh-4rem)] flex items-center justify-center bg-white dark:bg-[#0B0F19] p-4 sm:p-8 relative overflow-hidden transition-colors duration-300">
       
       {/* Decorative Blob */}
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-primary/5 rounded-full blur-[100px] -z-10 pointer-events-none" />
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-primary/5 rounded-full blur-[100px] -z-10 pointer-events-none dark:bg-primary/10" />
 
-      <div className="max-w-md w-full bg-white rounded-3xl shadow-xl overflow-hidden border border-gray-100 animate-in zoom-in-95 duration-500">
-        <div className="bg-slate-900 p-8 text-center text-white relative overflow-hidden">
+      <div className="max-w-md w-full bg-white dark:bg-gray-900 rounded-3xl shadow-xl dark:shadow-2xl overflow-hidden border border-gray-100 dark:border-gray-800 animate-in zoom-in-95 duration-500">
+        <div className="bg-slate-900 dark:bg-slate-950 p-8 text-center text-white relative overflow-hidden">
           <div className="absolute inset-0 bg-primary/20 mix-blend-overlay" />
           <div className="w-16 h-16 bg-white/10 rounded-2xl flex items-center justify-center mx-auto mb-4 relative z-10 backdrop-blur-sm border border-white/10">
             <Lock className="w-8 h-8 text-white" />
@@ -62,37 +62,37 @@ export default function LoginPage() {
 
         <form onSubmit={handleLogin} className="p-8 space-y-6">
           {error && (
-            <div className="bg-red-50 text-red-600 text-sm font-bold p-4 rounded-xl flex items-center gap-2">
+            <div className="bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400 text-sm font-bold p-4 rounded-xl flex items-center gap-2 border border-red-100 dark:border-red-500/20">
               <ShieldCheck className="w-5 h-5 shrink-0" />
               {error}
             </div>
           )}
 
           <div className="space-y-2">
-            <label htmlFor="email" className="block text-sm font-bold text-foreground">
+            <label htmlFor="email" className="block text-sm font-bold text-gray-900 dark:text-gray-100">
               البريد الإلكتروني للإدارة / رقم هاتف الطالب
             </label>
             <div className="relative">
-              <Mail className="w-5 h-5 absolute right-4 top-1/2 -translate-y-1/2 text-gray-400" />
+              <Mail className="w-5 h-5 absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500" />
               <input 
                 type="text" 
                 id="email"
                 value={identifier}
                 onChange={(e) => setIdentifier(e.target.value)}
                 required 
-                className="w-full pl-4 pr-12 py-3 rounded-xl border border-gray-200 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all text-left"
+                className="w-full pl-4 pr-12 py-3.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:border-primary focus:ring-2 focus:ring-primary/20 dark:focus:ring-primary/10 outline-none transition-all duration-200 text-left"
                 placeholder="البريد أو رقم الهاتف"
                 dir="ltr"
               />
             </div>
-            <p className="text-xs text-gray-500 mt-1">
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
               أدخل كلمة <span className="text-primary font-bold">admin</span> في البريد للدخول كمعلم
             </p>
           </div>
 
           <div className="space-y-2">
             <div className="flex items-center justify-between">
-              <label htmlFor="password" className="block text-sm font-bold text-foreground">
+              <label htmlFor="password" className="block text-sm font-bold text-gray-400 dark:text-gray-100">
                 كلمة المرور
               </label>
               <Link href="#" className="text-xs font-bold text-primary hover:text-primary-dark transition-colors">
@@ -100,14 +100,14 @@ export default function LoginPage() {
               </Link>
             </div>
             <div className="relative">
-              <Lock className="w-5 h-5 absolute right-4 top-1/2 -translate-y-1/2 text-gray-400" />
+              <Lock className="w-5 h-5 absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500" />
               <input 
                 type="password" 
                 id="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required 
-                className="w-full pl-4 pr-12 py-3 rounded-xl border border-gray-200 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all text-left"
+                className="w-full pl-4 pr-12 py-3.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:border-primary focus:ring-2 focus:ring-primary/20 dark:focus:ring-primary/10 outline-none transition-all duration-200 text-left"
                 placeholder="••••••••"
                 dir="ltr"
               />
@@ -118,9 +118,9 @@ export default function LoginPage() {
             <input 
               type="checkbox" 
               id="remember" 
-              className="w-4 h-4 rounded text-primary focus:ring-primary border-gray-300 cursor-pointer"
+              className="w-4 h-4 rounded text-primary focus:ring-primary border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 cursor-pointer"
             />
-            <label htmlFor="remember" className="text-sm font-medium text-gray-600 cursor-pointer select-none">
+            <label htmlFor="remember" className="text-sm font-medium text-gray-600 dark:text-gray-400 cursor-pointer select-none">
               تذكرني على هذا الجهاز
             </label>
           </div>
@@ -128,7 +128,7 @@ export default function LoginPage() {
           <button 
             type="submit" 
             disabled={isSubmitting}
-            className="w-full py-4 rounded-xl bg-primary text-white font-bold text-lg hover:bg-primary-dark transition-all disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2 mt-6 shadow-md shadow-primary/20"
+            className="w-full py-4 rounded-xl bg-primary text-white font-bold text-lg hover:bg-primary/90 hover:scale-[1.01] active:scale-[0.99] transition-all disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2 mt-6 shadow-md shadow-primary/20"
           >
             {isSubmitting ? (
               <span className="w-6 h-6 border-3 border-white/30 border-t-white rounded-full animate-spin" />
@@ -138,23 +138,23 @@ export default function LoginPage() {
           </button>
         </form>
 
-        <div className="p-6 border-t border-gray-100 bg-gray-50 text-center space-y-3">
-          <p className="text-sm font-medium text-gray-600 mb-4">
+        <div className="p-6 border-t border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-900/50 text-center space-y-3">
+          <p className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-4">
             ليس لديك حساب بعد؟
           </p>
           <Link 
             href="/join"
-            className="inline-flex items-center justify-center gap-2 w-full py-3 rounded-xl bg-white border border-gray-200 text-foreground font-bold hover:border-primary hover:text-primary transition-colors"
+            className="inline-flex items-center justify-center gap-2 w-full py-3 rounded-xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-900 dark:text-gray-100 font-bold hover:border-primary dark:hover:border-primary hover:text-primary dark:hover:text-primary transition-all duration-200"
           >
             طلب انضمام جديد المرة الأولى
-            <ArrowRight className="w-4 h-4" />
+            <ArrowRight className="w-4 h-4 mr-1" />
           </Link>
           <Link 
             href="/register-teacher"
-            className="inline-flex items-center justify-center gap-2 w-full py-3 rounded-xl bg-primary/5 border border-primary/20 text-primary font-bold hover:bg-primary hover:text-white transition-all"
+            className="inline-flex items-center justify-center gap-2 w-full py-3 rounded-xl bg-primary/5 dark:bg-primary/10 border border-primary/20 dark:border-primary/30 text-primary font-bold hover:bg-primary hover:text-white transition-all duration-200"
           >
             تسجيل كمعلم جديد
-            <ArrowRight className="w-4 h-4" />
+            <ArrowRight className="w-4 h-4 mr-1" />
           </Link>
         </div>
       </div>
