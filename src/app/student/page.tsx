@@ -88,12 +88,12 @@ export default async function StudentDashboard() {
     avgPct === null
       ? "#64748b"
       : avgPct >= 85
-      ? "#10b981"
-      : avgPct >= 65
-      ? "#6366f1"
-      : avgPct >= 50
-      ? "#f59e0b"
-      : "#f43f5e";
+        ? "#10b981"
+        : avgPct >= 65
+          ? "#6366f1"
+          : avgPct >= 50
+            ? "#f59e0b"
+            : "#f43f5e";
 
   return (
     <div className="max-w-7xl mx-auto space-y-10 animate-in fade-in slide-in-from-bottom-6 duration-700 pb-20 px-4">
@@ -242,44 +242,40 @@ export default async function StudentDashboard() {
 
         {/* Days Remaining */}
         <div
-          className={`rounded-[2.5rem] p-8 border shadow-sm transition-all duration-300 ${
-            isExpiring
+          className={`rounded-[2.5rem] p-8 border shadow-sm transition-all duration-300 ${isExpiring
               ? "bg-warning/10 border-warning/20"
               : isExpired || isInactive
-              ? "bg-danger/10 border-danger/20"
-              : "bg-card border-card-border"
-          }`}
+                ? "bg-danger/10 border-danger/20"
+                : "bg-card border-card-border"
+            }`}
         >
           <div
-            className={`w-12 h-12 rounded-2xl flex items-center justify-center mb-4 ${
-              isExpiring
+            className={`w-12 h-12 rounded-2xl flex items-center justify-center mb-4 ${isExpiring
                 ? "bg-warning/20"
                 : isExpired || isInactive
-                ? "bg-danger/20"
-                : "bg-purple-500/10"
-            }`}
+                  ? "bg-danger/20"
+                  : "bg-purple-500/10"
+              }`}
           >
             <ShieldCheck
-              className={`w-6 h-6 ${
-                isExpiring
+              className={`w-6 h-6 ${isExpiring
                   ? "text-warning-fg"
                   : isExpired || isInactive
-                  ? "text-danger-fg"
-                  : "text-purple-500"
-              }`}
+                    ? "text-danger-fg"
+                    : "text-purple-500"
+                }`}
             />
           </div>
           <p className="text-muted-fg font-bold text-xs uppercase tracking-widest mb-1">
             متبقي بالاشتراك
           </p>
           <h3
-            className={`text-3xl font-black tabular-nums ${
-              isExpiring
+            className={`text-3xl font-black tabular-nums ${isExpiring
                 ? "text-warning-fg"
                 : isExpired || isInactive
-                ? "text-danger-fg"
-                : "text-foreground"
-            }`}
+                  ? "text-danger-fg"
+                  : "text-foreground"
+              }`}
           >
             {daysLeft} يوم
           </h3>
@@ -375,7 +371,7 @@ export default async function StudentDashboard() {
             </div>
           )}
 
-          
+
         </div>
 
       </div>
