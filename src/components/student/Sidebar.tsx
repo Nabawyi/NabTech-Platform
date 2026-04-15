@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { LayoutDashboard, BookOpen, User, CalendarCheck, LogOut } from "lucide-react";
+import { LayoutDashboard, BookOpen, User, CalendarCheck, LogOut, FileText } from "lucide-react";
 import Logo from "@/components/ui/Logo";
 import { logoutUser } from "@/app/actions/students";
 
@@ -18,6 +18,7 @@ export default function Sidebar() {
   const links = [
     { name: "الرئيسية", href: "/student", icon: LayoutDashboard },
     { name: "دروسي", href: "/student/lessons", icon: BookOpen },
+    { name: "نتائجي", href: "/student/quiz", icon: FileText },
     { name: "سجل الحضور", href: "/student/attendance", icon: CalendarCheck },
     { name: "الملف الشخصي", href: "/student/profile", icon: User },
   ];

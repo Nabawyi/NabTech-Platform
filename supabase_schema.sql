@@ -198,4 +198,71 @@ CREATE POLICY "qr_teacher" ON quiz_results FOR ALL USING (EXISTS (
 
 -- INSERT INTO profiles (id, name, role, phone)
 -- VALUES ('REPLACE_WITH_THE_UUID_OF_THE_NEWLY_CREATED_USER', 'مالك المنصة', 'owner', '')
--- ON CONFLICT (id) DO UPDATE SET role = 'owner';
+
+-- =====================================================================
+-- 11. EXAMS & GRADES
+-- =====================================================================
+
+-- ─── EXAMS ────────────────────────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS exams (
+  id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  title       TEXT NOT NULL,
+  type        TEXT NOT NULL CHECK (type IN ('quiz','midterm','final')),
+  total_score INTEGER NOT NULL CHECK (total_score > 0),
+  grade_code  TEXT NOT NULL,          -- e.g. 'pri_1', 'sec_3'
+  teacher_id  UUID NOT NULL REFERENCES teachers(id) ON DELETE CASCADE,
+  created_at  TIMESTAMPTZ DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_exams_teacher_id ON exams(teacher_id);
+CREATE INDEX IF NOT EXISTS idx_exams_grade_code ON exams(grade_code);
+
+-- ─── EXAM RESULTS ─────────────────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS exam_results (
+  id         UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  exam_id    UUID NOT NULL REFERENCES exams(id) ON DELETE CASCADE,
+  student_id UUID NOT NULL REFERENCES students(id) ON DELETE CASCADE,
+  score      INTEGER CHECK (score >= 0),
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE (exam_id, student_id)
+);
+CREATE INDEX IF NOT EXISTS idx_exam_results_exam_id    ON exam_results(exam_id);
+CREATE INDEX IF NOT EXISTS idx_exam_results_student_id ON exam_results(student_id);
+
+-- ─── RLS ──────────────────────────────────────────────────────────────────
+ALTER TABLE exams        ENABLE ROW LEVEL SECURITY;
+ALTER TABLE exam_results ENABLE ROW LEVEL SECURITY;
+
+-- Exams: teacher owns their exams
+CREATE POLICY "exams_teacher" ON exams FOR ALL
+  USING (teacher_id = auth.uid())
+  WITH CHECK (teacher_id = auth.uid());
+
+-- Exams: student reads exams belonging to their teacher
+CREATE POLICY "exams_student" ON exams FOR SELECT
+  USING (EXISTS (
+    SELECT 1 FROM students s
+    WHERE s.auth_id = auth.uid()
+      AND s.teacher_id = exams.teacher_id
+  ));
+
+-- Exam Results: teacher manages results for their students only
+CREATE POLICY "exam_results_teacher" ON exam_results FOR ALL
+  USING (EXISTS (
+    SELECT 1 FROM students s
+    WHERE s.id = exam_results.student_id
+      AND s.teacher_id = auth.uid()
+  ))
+  WITH CHECK (EXISTS (
+    SELECT 1 FROM students s
+    WHERE s.id = exam_results.student_id
+      AND s.teacher_id = auth.uid()
+  ));
+
+-- Exam Results: student views only their own (join on auth_id)
+CREATE POLICY "exam_results_student" ON exam_results FOR SELECT
+  USING (EXISTS (
+    SELECT 1 FROM students s
+    WHERE s.id = exam_results.student_id
+      AND s.auth_id = auth.uid()
+  ));
+

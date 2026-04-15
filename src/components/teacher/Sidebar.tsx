@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { LayoutDashboard, Users, BookOpen, CheckSquare, UserCheck, LogOut, MapPin, CreditCard, Settings } from "lucide-react";
+import { LayoutDashboard, Users, BookOpen, CheckSquare, UserCheck, LogOut, MapPin, CreditCard, Settings, FileText } from "lucide-react";
 import Logo from "@/components/ui/Logo";
 import { logoutUser } from "@/app/actions/students";
 

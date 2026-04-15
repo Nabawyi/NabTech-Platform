@@ -104,3 +104,51 @@ export type GroupFormPayload = {
   endTime: string;
   locationName?: string;
 };
+
+// ─── Exam & Grades ───────────────────────────────────────────────────────────
+
+export type ExamType = 'quiz' | 'midterm' | 'final';
+
+export type ExamRow = {
+  id: string;
+  title: string;
+  type: ExamType;
+  total_score: number;
+  grade_code: string;
+  teacher_id: string;
+  created_at: string;
+};
+
+export type ExamResultRow = {
+  id: string;
+  exam_id: string;
+  student_id: string;
+  score: number | null;
+  created_at: string;
+};
+
+/** Joined: exam + one student's result (for score-entry table) */
+export type StudentExamEntry = {
+  student_id: string;
+  student_name: string;
+  result_id: string | null;
+  score: number | null;
+};
+
+/** Joined: exam_result + exam meta (for student results page) */
+export type StudentResultRow = {
+  result_id: string;
+  exam_id: string;
+  exam_title: string;
+  exam_type: ExamType;
+  total_score: number;
+  score: number | null;
+  created_at: string;
+};
+
+/** Payload for bulk upsert */
+export type StudentScoreEntry = {
+  exam_id: string;
+  student_id: string;
+  score: number | null;
+};
