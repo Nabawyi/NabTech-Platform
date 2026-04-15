@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Lock, Mail, ArrowRight, ShieldCheck } from "lucide-react";
+import { Lock, Mail, ArrowRight, ShieldCheck, Eye, EyeOff } from "lucide-react";
 
 import { loginUser } from "@/app/actions/students";
 
@@ -13,6 +13,7 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
 
   const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -85,9 +86,6 @@ export default function LoginPage() {
                 dir="ltr"
               />
             </div>
-            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-              أدخل كلمة <span className="text-primary font-bold">admin</span> في البريد للدخول كمعلم
-            </p>
           </div>
 
           <div className="space-y-2">
@@ -102,15 +100,23 @@ export default function LoginPage() {
             <div className="relative">
               <Lock className="w-5 h-5 absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500" />
               <input 
-                type="password" 
+                type={showPassword ? "text" : "password"} 
                 id="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required 
-                className="w-full pl-4 pr-12 py-3.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:border-primary focus:ring-2 focus:ring-primary/20 dark:focus:ring-primary/10 outline-none transition-all duration-200 text-left"
+                className="w-full pl-12 pr-12 py-3.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:border-primary focus:ring-2 focus:ring-primary/20 dark:focus:ring-primary/10 outline-none transition-all duration-200 text-left"
                 placeholder="••••••••"
                 dir="ltr"
               />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors"
+                tabIndex={-1}
+              >
+                {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+              </button>
             </div>
           </div>
 

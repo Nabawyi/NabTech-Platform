@@ -105,6 +105,31 @@ export async function deleteExam(examId: string): Promise<void> {
   if (error) throw new Error(error.message);
 }
 
+// ─── Update Exam ──────────────────────────────────────────────────────────────
+
+export async function updateExam(examId: string, payload: Partial<CreateExamPayload>): Promise<ExamRow> {
+  const session = await getUserSession();
+  if (!session || session.role !== "admin") throw new Error("Unauthorized");
+
+  const supabase = await createClient();
+
+  const { data, error } = await supabase
+    .from("exams")
+    .update({
+      title: payload.title?.trim(),
+      type: payload.type,
+      total_score: payload.total_score,
+      grade_code: payload.grade_code,
+    })
+    .eq("id", examId)
+    .eq("teacher_id", session.teacherId)
+    .select("id, title, type, total_score, grade_code, teacher_id, created_at")
+    .single();
+
+  if (error) throw new Error(error.message);
+  return data as ExamRow;
+}
+
 // ─── Get Students For Grade (paginated + search) ──────────────────────────────
 
 export async function getStudentsForGrade(

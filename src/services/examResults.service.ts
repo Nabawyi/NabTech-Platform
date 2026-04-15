@@ -149,3 +149,57 @@ export async function getResultsForStudent(): Promise<StudentResultRow[]> {
     created_at: r.created_at,
   }));
 }
+
+// ─── Upsert Single Score By Student Code ──────────────────────────────────────
+export async function upsertScoreByStudentCode(
+  examId: string,
+  studentCode: string,
+  score: number
+): Promise<{ success: boolean; error?: string; studentName?: string }> {
+  const session = await getUserSession();
+  if (!session || session.role !== "admin") return { success: false, error: "Unauthorized" };
+
+  const admin = createAdminClient();
+
+  // 1. Find the student by code and teacher_id
+  const { data: student, error: studentError } = await admin
+    .from("students")
+    .select("id, name")
+    .eq("student_code", studentCode.trim())
+    .eq("teacher_id", session.teacherId)
+    .single();
+
+  if (studentError || !student) {
+    return { success: false, error: "الطالب غير موجود أو ليس مسجلاً لديك" };
+  }
+
+  // 2. Lookup the exam to check total_score
+  const { data: exam, error: examError } = await admin
+    .from("exams")
+    .select("total_score")
+    .eq("id", examId)
+    .single();
+
+  if (examError || !exam) {
+    return { success: false, error: "الاختبار غير موجود" };
+  }
+
+  if (score > exam.total_score) {
+    return { success: false, error: `الدرجة لا يمكن أن تتخطى الدرجة النهائية (${exam.total_score})` };
+  }
+
+  // 3. Upsert the score
+  const { error: upsertError } = await admin
+    .from("exam_results")
+    .upsert({
+      exam_id: examId,
+      student_id: student.id,
+      score: score
+    }, { onConflict: "exam_id,student_id" });
+
+  if (upsertError) {
+    return { success: false, error: upsertError.message };
+  }
+
+  return { success: true, studentName: student.name };
+}

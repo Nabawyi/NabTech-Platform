@@ -1,17 +1,19 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Plus, CheckSquare, Trash2, Search, Calendar, ChevronLeft } from "lucide-react";
+import { Plus, CheckSquare, Trash2, Search, Calendar, ChevronLeft, Edit2 } from "lucide-react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { getTeacherExamsAction, deleteExamAction } from "@/app/actions/exams";
 import { type ExamRow } from "@/types/domain";
 import { EDUCATION_LEVELS } from "@/lib/constants";
+import EditExamModal from "@/components/teacher/EditExamModal";
 
 export default function QuizzesPage() {
   const [quizzes, setQuizzes] = useState<ExamRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
+  const [editingExam, setEditingExam] = useState<ExamRow | null>(null);
 
   const fetchData = async () => {
     setLoading(true);
@@ -66,16 +68,25 @@ export default function QuizzesPage() {
   };
 
   return (
-    <div className="max-w-6xl mx-auto space-y-8">
+    <div className="max-w-6xl mx-auto space-y-8 pb-20">
+      {/* Modals */}
+      {editingExam && (
+        <EditExamModal 
+          exam={editingExam} 
+          onClose={() => setEditingExam(null)} 
+          onSuccess={fetchData}
+        />
+      )}
+
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-black text-slate-900 dark:text-white">إدارة الاختبارات</h1>
-          <p className="text-slate-400 font-medium mt-1">أنشئ الاختبارات وقم بإدارة درجات الطلاب بسهولة</p>
+          <p className="text-slate-400 dark:text-gray-500 font-medium mt-1">أنشئ الاختبارات وقم بإدارة درجات الطلاب بسهولة</p>
         </div>
         <Link
           href="/teacher/quizzes/new"
-          className="flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 rounded-2xl font-bold transition-all hover:scale-[1.02] active:scale-95 shadow-lg shadow-indigo-600/25"
+          className="flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-8 py-3.5 rounded-2xl font-black transition-all hover:scale-[1.02] active:scale-95 shadow-xl shadow-indigo-600/25"
         >
           <Plus className="w-5 h-5" />
           إنشاء اختبار جديد
@@ -90,7 +101,7 @@ export default function QuizzesPage() {
           placeholder="ابحث عن اختبار بالعنوان..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl px-12 py-4 text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all shadow-sm"
+          className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl px-12 py-4 text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all shadow-sm"
         />
       </div>
 
@@ -104,13 +115,13 @@ export default function QuizzesPage() {
       ) : filteredQuizzes.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-20 bg-white dark:bg-slate-900 border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-[2.5rem]">
           <div className="w-20 h-20 bg-slate-50 dark:bg-slate-800 flex items-center justify-center rounded-3xl mb-6">
-            <CheckSquare className="w-10 h-10 text-slate-300" />
+            <CheckSquare className="w-10 h-10 text-slate-300 dark:text-slate-700" />
           </div>
-          <p className="text-slate-500 font-bold text-lg">لا توجد اختبارات بعد</p>
-          <p className="text-slate-400 text-sm mt-1 mb-8">ابدأ بإنشاء أول اختبار لطلابك الآن</p>
+          <p className="text-slate-500 dark:text-gray-400 font-bold text-lg">لا توجد اختبارات بعد</p>
+          <p className="text-slate-400 dark:text-gray-500 text-sm mt-1 mb-8">ابدأ بإنشاء أول اختبار لطلابك الآن</p>
           <Link
             href="/teacher/quizzes/new"
-            className="text-indigo-600 font-bold hover:underline"
+            className="text-indigo-600 dark:text-indigo-400 font-bold hover:underline"
           >
             اضغط هنا للبدء
           </Link>
@@ -129,15 +140,23 @@ export default function QuizzesPage() {
               >
                 {/* Type Badge */}
                 <div className="flex justify-between items-start mb-4">
-                  <span className={`px-4 py-1 rounded-full text-xs font-black uppercase tracking-wider ${getBadgeStyle(quiz.type)}`}>
+                  <span className={`px-4 py-1 rounded-full text-[10px] font-black uppercase tracking-wider ${getBadgeStyle(quiz.type)}`}>
                     {getTypeLabel(quiz.type)}
                   </span>
-                  <button
-                    onClick={() => handleDelete(quiz.id)}
-                    className="p-2 text-slate-300 hover:text-rose-500 transition-colors opacity-0 group-hover:opacity-100"
-                  >
-                    <Trash2 className="w-5 h-5" />
-                  </button>
+                  <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <button
+                      onClick={() => setEditingExam(quiz)}
+                      className="p-2 text-slate-300 hover:text-indigo-500 hover:bg-indigo-50 dark:hover:bg-indigo-500/10 rounded-xl transition-all"
+                    >
+                      <Edit2 className="w-4.5 h-4.5" />
+                    </button>
+                    <button
+                      onClick={() => handleDelete(quiz.id)}
+                      className="p-2 text-slate-300 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-500/10 rounded-xl transition-all"
+                    >
+                      <Trash2 className="w-4.5 h-4.5" />
+                    </button>
+                  </div>
                 </div>
 
                 <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-2 line-clamp-1">{quiz.title}</h3>

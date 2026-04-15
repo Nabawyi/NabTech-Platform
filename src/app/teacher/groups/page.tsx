@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { Plus, Edit2, Trash2, MapPin, Users, Clock, X, AlertTriangle } from "lucide-react";
+import { Plus, Edit2, Trash2, MapPin, Users, Clock, X, AlertTriangle, CheckCircle2 } from "lucide-react";
 import { 
   getLocations, addLocation, updateLocation, deleteLocation, 
   addGroup, updateGroup, deleteGroup, getGroupStudentCounts 
@@ -98,7 +98,7 @@ export default function GroupsPage() {
     const newLoc = await addLocation(name, teacherId);
     setLocations(prev => [...prev, newLoc]);
     setAddingLoc(false);
-    showToast(`✅ تم إضافة السنتر "${name}" بنجاح`);
+    showToast(`تم إضافة السنتر "${name}" بنجاح`);
   };
 
   const handleUpdateLocation = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -108,7 +108,7 @@ export default function GroupsPage() {
     const name = formData.get("name") as string;
     await updateLocation(editingLoc.id, name);
     setEditingLoc(null);
-    showToast("✅ تم تحديث اسم السنتر");
+    showToast("تم تحديث اسم السنتر");
     loadData();
   };
 
@@ -118,7 +118,7 @@ export default function GroupsPage() {
     if (!res.success) {
       showToast(res.error!, 'error');
     } else {
-      showToast("🗑️ تم حذف السنتر بنجاح");
+      showToast("تم حذف السنتر بنجاح");
       loadData();
     }
   };
@@ -157,7 +157,7 @@ export default function GroupsPage() {
       setGroupGrade("");
       setGroupStartTime("");
       setGroupEndTime("");
-      showToast("✅ تم إضافة المجموعة بنجاح");
+      showToast("تم إضافة المجموعة بنجاح");
       loadData();
     } catch (err) {
       showToast((err as Error).message ?? "حدث خطأ أثناء إضافة المجموعة", "error");
@@ -196,7 +196,7 @@ export default function GroupsPage() {
       setGroupGrade("");
       setGroupStartTime("");
       setGroupEndTime("");
-      showToast("✅ تم تحديث المجموعة بنجاح");
+      showToast("تم تحديث المجموعة بنجاح");
       loadData();
     } catch (err) {
       showToast((err as Error).message ?? "حدث خطأ أثناء تحديث المجموعة", "error");
@@ -209,7 +209,7 @@ export default function GroupsPage() {
     if (!res.success) {
       showToast(res.error!, 'error');
     } else {
-      showToast("🗑️ تم حذف المجموعة بنجاح");
+      showToast("تم حذف المجموعة بنجاح");
       loadData();
     }
   };
@@ -244,7 +244,7 @@ export default function GroupsPage() {
         <div className={`fixed top-6 left-1/2 -translate-x-1/2 z-[200] px-8 py-4 rounded-2xl shadow-2xl font-black text-sm flex items-center gap-3 animate-in slide-in-from-top-4 duration-300 ${
           toast.type === 'error' ? 'bg-red-500 text-white' : 'bg-slate-900 text-white'
         }`}>
-          {toast.type === 'error' && <AlertTriangle className="w-5 h-5" />}
+          {toast.type === 'error' ? <AlertTriangle className="w-5 h-5" /> : <CheckCircle2 className="w-5 h-5 text-emerald-400" />}
           {toast.msg}
         </div>
       )}

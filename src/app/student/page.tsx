@@ -102,8 +102,8 @@ export default async function StudentDashboard() {
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
         <div className="space-y-2">
           <div className="flex items-center gap-3">
-            <div className="w-12 h-12 bg-primary/10 rounded-2xl flex items-center justify-center text-primary text-xl scale-90 sm:scale-100">
-              👋
+            <div className="w-12 h-12 bg-primary/10 rounded-2xl flex items-center justify-center text-primary scale-90 sm:scale-100">
+              <BookOpen className="w-6 h-6" />
             </div>
             <h1 className="text-3xl sm:text-4xl font-black text-foreground tracking-tight">
               أهلاً يا {firstName}

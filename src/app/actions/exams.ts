@@ -88,3 +88,26 @@ export async function getStudentResultsAction() {
     return { success: false, error: error.message };
   }
 }
+
+export async function updateExamAction(examId: string, payload: Partial<ExamsService.CreateExamPayload>) {
+  try {
+    const exam = await ExamsService.updateExam(examId, payload);
+    revalidatePath("/teacher/quizzes");
+    return { success: true, exam };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+}
+
+export async function upsertSingleScoreByCodeAction(examId: string, studentCode: string, score: number) {
+  try {
+    const res = await ExamResultsService.upsertScoreByStudentCode(examId, studentCode, score);
+    if (res.success) {
+      revalidatePath(`/teacher/quizzes/${examId}`);
+      revalidatePath("/student/quiz");
+    }
+    return res;
+  } catch (error: any) {
+    return { success: false, error: error.message, studentName: undefined };
+  }
+}

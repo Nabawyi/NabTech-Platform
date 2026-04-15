@@ -31,23 +31,26 @@ export default function Sidebar() {
         </Link>
       </div>
 
-      <div className="flex-1 px-4 py-8 space-y-1.5 font-cairo">
+      {/* Navigation */}
+      <div className="flex-1 px-4 py-8 space-y-3 font-cairo">
         {links.map((link) => {
           const Icon = link.icon;
           const isActive = pathname === link.href;
-          
+
           return (
             <Link
-              key={link.name}
+              key={link.href}
               href={link.href}
-              className={`flex items-center gap-3 px-4 py-3.5 rounded-2xl transition-all duration-300 group ${
-                isActive 
-                  ? "bg-primary text-white shadow-lg shadow-primary/25" 
+              className={`flex items-center gap-4 px-6 py-4 rounded-2xl transition-all duration-300 group ${
+                isActive
+                  ? "bg-primary text-white shadow-lg shadow-primary/20 scale-[1.02]"
                   : "text-muted-fg hover:bg-muted hover:text-foreground"
               }`}
             >
-              <Icon className={`w-5 h-5 transition-transform group-hover:scale-110 ${isActive ? 'text-white' : 'text-muted-fg group-hover:text-primary'}`} />
-              <span className="font-bold text-sm tracking-wide">{link.name}</span>
+              <Icon className={`w-5 h-5 transition-transform duration-300 ${isActive ? 'scale-110' : 'group-hover:scale-110'}`} />
+              <span className={`text-base tracking-wide transition-all ${isActive ? 'font-black' : 'font-bold'}`}>
+                {link.name}
+              </span>
             </Link>
           );
         })}

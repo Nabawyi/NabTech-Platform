@@ -129,35 +129,36 @@ function AddLessonForm() {
   return (
     <div className="max-w-4xl mx-auto space-y-8 animate-in fade-in duration-500 pb-20">
       {/* Header */}
+      {/* Header */}
       <div className="flex items-center gap-4">
         <button
           onClick={() => router.push("/teacher/lessons")}
-          className="p-3 rounded-xl bg-white border border-gray-100 text-gray-400 hover:text-primary transition-all shadow-sm"
+          className="p-3 rounded-xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-400 hover:text-primary transition-all shadow-sm"
         >
           <ArrowRight className="w-5 h-5" />
         </button>
         <div>
-          <h1 className="text-2xl font-black text-foreground">إضافة درس جديد</h1>
-          <p className="text-sm text-gray-400 font-medium">أدخل تفاصيل الدرس للمرحلة {currentLevelInfo?.nameAr}</p>
+          <h1 className="text-2xl font-black text-foreground dark:text-gray-100">إضافة درس جديد</h1>
+          <p className="text-sm text-gray-400 dark:text-gray-400 font-medium">أدخل تفاصيل الدرس للمرحلة {currentLevelInfo?.nameAr}</p>
         </div>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* Basic Info Card */}
-        <div className="bg-white rounded-[2rem] shadow-sm border border-gray-100 p-8 space-y-6">
-          <h2 className="text-lg font-black text-slate-700 border-b border-gray-100 pb-4">معلومات الدرس الأساسية</h2>
+        <div className="bg-white dark:bg-gray-800 rounded-[2rem] shadow-sm border border-gray-200 dark:border-gray-700 p-8 space-y-6 relative z-10">
+          <h2 className="text-lg font-black text-gray-800 dark:text-gray-100 border-b border-gray-200 dark:border-gray-700 pb-4">معلومات الدرس الأساسية</h2>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 relative z-20">
             {/* Level Selection */}
             <div className="space-y-2">
-              <label className="block text-sm font-black text-slate-600">المرحلة الدراسية *</label>
+              <label className="block text-sm font-black text-gray-700 dark:text-gray-300 mr-1">المرحلة الدراسية *</label>
               <select
                 value={level}
                 onChange={(e) => {
                   setLevel(e.target.value as SchoolLevel);
                   setGradeNumber(1);
                 }}
-                className="w-full px-5 py-4 bg-gray-50 rounded-2xl border border-gray-100 focus:border-primary focus:ring-4 focus:ring-primary/10 outline-none font-bold"
+                className="w-full px-4 py-3 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:border-primary focus:ring-4 focus:ring-primary/20 outline-none font-bold"
               >
                 {EDUCATION_LEVELS.map(l => (
                   <option key={l.id} value={l.id}>{l.nameAr}</option>
@@ -167,11 +168,11 @@ function AddLessonForm() {
 
             {/* Grade Selection */}
             <div className="space-y-2">
-              <label className="block text-sm font-black text-slate-600">الصف الدراسي *</label>
+              <label className="block text-sm font-black text-gray-700 dark:text-gray-300 mr-1">الصف الدراسي *</label>
               <select
                 value={gradeNumber}
                 onChange={(e) => setGradeNumber(parseInt(e.target.value))}
-                className="w-full px-5 py-4 bg-gray-50 rounded-2xl border border-gray-100 focus:border-primary focus:ring-4 focus:ring-primary/10 outline-none font-bold"
+                className="w-full px-4 py-3 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:border-primary focus:ring-4 focus:ring-primary/20 outline-none font-bold"
               >
                 {currentLevelInfo?.grades.map(g => (
                   <option key={g.number} value={g.number}>{g.label}</option>
@@ -181,52 +182,52 @@ function AddLessonForm() {
 
             {/* Title */}
             <div className="space-y-2 md:col-span-2">
-              <label className="block text-sm font-black text-slate-600">عنوان الدرس *</label>
+              <label className="block text-sm font-black text-gray-700 dark:text-gray-300 mr-1">عنوان الدرس *</label>
               <input
                 type="text"
                 required
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
-                className="w-full px-5 py-4 bg-gray-50 rounded-2xl border border-gray-100 focus:border-primary focus:ring-4 focus:ring-primary/10 outline-none font-bold"
+                className="w-full px-4 py-3 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:border-primary focus:ring-4 focus:ring-primary/20 outline-none font-bold"
                 placeholder="مثال: الدعامة في الكائنات الحية"
               />
             </div>
 
             {/* Video URL */}
             <div className="space-y-2 md:col-span-2">
-              <label className="block text-sm font-black text-slate-600">رابط الفيديو (YouTube) *</label>
+              <label className="block text-sm font-black text-gray-700 dark:text-gray-300 mr-1">رابط الفيديو (YouTube) *</label>
               <input
                 type="url"
                 required
                 dir="ltr"
                 value={videoUrl}
                 onChange={(e) => setVideoUrl(e.target.value)}
-                className="w-full px-5 py-4 bg-gray-50 rounded-2xl border border-gray-100 focus:border-primary focus:ring-4 focus:ring-primary/10 outline-none font-bold text-left"
+                className="w-full px-4 py-3 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:border-primary focus:ring-4 focus:ring-primary/20 outline-none font-bold text-left"
                 placeholder="https://www.youtube.com/watch?v=..."
               />
             </div>
 
             {/* Description */}
             <div className="space-y-2 md:col-span-2">
-              <label className="block text-sm font-black text-slate-600">وصف الدرس (اختياري)</label>
+              <label className="block text-sm font-black text-gray-700 dark:text-gray-300 mr-1">وصف الدرس (اختياري)</label>
               <textarea
                 rows={3}
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
-                className="w-full px-5 py-4 bg-gray-50 rounded-2xl border border-gray-100 focus:border-primary focus:ring-4 focus:ring-primary/10 outline-none font-bold resize-none"
+                className="w-full px-4 py-3 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:border-primary focus:ring-4 focus:ring-primary/20 outline-none font-bold resize-none"
                 placeholder="اكتب نبذة عن محتوى الدرس..."
               />
             </div>
 
             {/* PDF URL */}
             <div className="space-y-2 md:col-span-2">
-              <label className="block text-sm font-black text-slate-600">رابط ملف PDF (اختياري)</label>
+              <label className="block text-sm font-black text-gray-700 dark:text-gray-300 mr-1">رابط ملف PDF (اختياري)</label>
               <input
                 type="url"
                 dir="ltr"
                 value={pdfUrl}
                 onChange={(e) => setPdfUrl(e.target.value)}
-                className="w-full px-5 py-4 bg-gray-50 rounded-2xl border border-gray-100 focus:border-primary focus:ring-4 focus:ring-primary/10 outline-none font-bold text-left"
+                className="w-full px-4 py-3 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:border-primary focus:ring-4 focus:ring-primary/20 outline-none font-bold text-left"
                 placeholder="https://drive.google.com/..."
               />
             </div>
@@ -234,11 +235,11 @@ function AddLessonForm() {
         </div>
 
         {/* Quiz Builder Card */}
-        <div className="bg-white rounded-[2rem] shadow-sm border border-gray-100 p-8 space-y-6">
-          <div className="flex items-center justify-between border-b border-gray-100 pb-4">
+        <div className="bg-white dark:bg-gray-800 rounded-[2rem] shadow-sm border border-gray-200 dark:border-gray-700 p-8 space-y-6 relative z-10">
+          <div className="flex items-center justify-between border-b border-gray-200 dark:border-gray-700 pb-4">
             <div className="flex items-center gap-3">
               <HelpCircle className="w-5 h-5 text-primary" />
-              <h2 className="text-lg font-black text-slate-700">أسئلة الدرس (اختياري)</h2>
+              <h2 className="text-lg font-black text-gray-800 dark:text-gray-100">أسئلة الدرس (اختياري)</h2>
             </div>
             <button
               type="button"
@@ -251,15 +252,15 @@ function AddLessonForm() {
           </div>
 
           {questions.length === 0 ? (
-            <div className="py-12 text-center border-2 border-dashed border-gray-100 rounded-3xl">
-              <HelpCircle className="w-12 h-12 text-gray-200 mx-auto mb-3" />
-              <p className="text-gray-400 font-bold">لا توجد أسئلة بعد</p>
-              <p className="text-gray-300 text-sm mt-1">اضغط «إضافة سؤال» لبناء اختبار للدرس</p>
+            <div className="py-12 text-center border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-3xl">
+              <HelpCircle className="w-12 h-12 text-gray-300 dark:text-gray-600 mx-auto mb-3" />
+              <p className="text-gray-500 dark:text-gray-400 font-bold">لا توجد أسئلة بعد</p>
+              <p className="text-gray-400 dark:text-gray-500 text-sm mt-1">اضغط «إضافة سؤال» لبناء اختبار للدرس</p>
             </div>
           ) : (
             <div className="space-y-6">
               {questions.map((q, qi) => (
-                <div key={qi} className="p-6 bg-slate-50 rounded-3xl border border-slate-100 space-y-4">
+                <div key={qi} className="p-6 bg-gray-50 dark:bg-gray-700/30 rounded-3xl border border-gray-200 dark:border-gray-700 space-y-4">
                   <div className="flex items-center gap-4">
                     <span className="w-8 h-8 bg-primary text-white rounded-xl flex items-center justify-center text-sm font-black flex-shrink-0">
                       {qi + 1}
@@ -269,19 +270,19 @@ function AddLessonForm() {
                       required
                       value={q.text}
                       onChange={(e) => updateQuestion(qi, "text", e.target.value)}
-                      className="flex-1 px-4 py-3 bg-white rounded-xl border border-gray-100 focus:border-primary focus:ring-2 focus:ring-primary/10 outline-none font-bold"
+                      className="flex-1 px-4 py-3 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:border-primary focus:ring-4 focus:ring-primary/20 outline-none font-bold"
                       placeholder="نص السؤال..."
                     />
                     <button
                       type="button"
                       onClick={() => removeQuestion(qi)}
-                      className="p-2.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all"
+                      className="p-2.5 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl transition-all"
                     >
                       <Trash2 className="w-4 h-4" />
                     </button>
                   </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mr-12">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mr-12 relative z-20">
                     {q.options.map((opt, oi) => (
                       <div key={oi} className="flex items-center gap-3">
                         <button
@@ -290,7 +291,7 @@ function AddLessonForm() {
                           className={`w-6 h-6 rounded-full border-2 flex-shrink-0 transition-all ${
                             q.correct === oi
                               ? "bg-emerald-500 border-emerald-500"
-                              : "border-gray-300 hover:border-emerald-400"
+                              : "border-gray-300 dark:border-gray-600 hover:border-emerald-400"
                           }`}
                         />
                         <input
@@ -298,13 +299,13 @@ function AddLessonForm() {
                           required
                           value={opt}
                           onChange={(e) => updateOption(qi, oi, e.target.value)}
-                          className="flex-1 px-4 py-2.5 bg-white rounded-xl border border-gray-100 focus:border-primary focus:ring-2 focus:ring-primary/10 outline-none font-medium text-sm"
+                          className="flex-1 px-4 py-2.5 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:border-primary focus:ring-4 focus:ring-primary/20 outline-none font-medium text-sm"
                           placeholder={`الخيار ${oi + 1}`}
                         />
                       </div>
                     ))}
                   </div>
-                  <p className="text-[10px] font-black text-emerald-600 mr-12">
+                  <p className="text-[10px] font-black text-emerald-600 dark:text-emerald-400 mr-12">
                     ● الإجابة الصحيحة: الخيار {q.correct + 1}
                   </p>
                 </div>
@@ -317,7 +318,7 @@ function AddLessonForm() {
         <button
           type="submit"
           disabled={saving}
-          className="w-full py-5 rounded-[2rem] bg-primary text-white font-black text-xl shadow-2xl shadow-primary/30 hover:scale-[1.01] active:scale-[0.99] transition-all disabled:opacity-60 flex items-center justify-center gap-3"
+          className="w-full py-4 rounded-xl bg-primary text-white font-black text-xl shadow-2xl shadow-primary/30 hover:scale-[1.01] active:scale-[0.99] transition-all disabled:opacity-60 flex items-center justify-center gap-3"
         >
           {saving ? (
             <span className="w-6 h-6 border-[3px] border-white/30 border-t-white rounded-full animate-spin" />

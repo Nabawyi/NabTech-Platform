@@ -125,7 +125,7 @@ export default function QuizResultsPage() {
                          <span className="text-3xl font-black text-slate-900 dark:text-white tabular-nums">{score}</span>
                          <span className="text-slate-400 text-sm font-bold">/ {total || '—'}</span>
                        </div>
-                       <div className={`text-[11px] font-black px-3 py-1 rounded-full mt-1.5 shadow-sm ${colorClass}`}>
+                       <div className={`text-[14px] font-black px-3 py-1 rounded-full mt-1.5 shadow-sm ${colorClass}`}>
                          {percentage}%
                        </div>
                     </div>

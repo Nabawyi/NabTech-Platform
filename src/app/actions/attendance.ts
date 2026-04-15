@@ -83,14 +83,23 @@ export async function getStudentAttendance(studentId: string): Promise<Attendanc
 export async function getAttendanceStats(teacherId?: string) {
   const records = await getAttendance(teacherId);
   const uniqueDates = new Set(records.map((r) => r.date));
-  const totalRecords = records.length;
-  const presentCount = records.filter((r) => r.status === "present").length;
-  const absentCount = records.filter((r) => r.status === "absent").length;
   const todayDate = new Date().toISOString().split("T")[0];
   const todays = records.filter((r) => r.date === todayDate);
-  const todayTotalRecords = todays.length;
-  const todayPresent = todays.filter((r) => r.status === "present").length;
-  const todayAbsent = todays.filter((r) => r.status === "absent").length;
+  
+  // Deduplicate by studentId to prevent double counting in case of bad data
+  const latestTodayRecords = new Map<string, typeof todays[0]>();
+  todays.forEach(r => latestTodayRecords.set(r.studentId, r));
+  
+  const todayRecordsUnique = Array.from(latestTodayRecords.values());
+  const todayTotalRecords = todayRecordsUnique.length;
+  
+  // A student is only 'absent' if their final status is 'absent'
+  const todayAbsent = todayRecordsUnique.filter((r) => r.status === "absent").length;
+  const todayPresent = todayTotalRecords - todayAbsent; // ensure sum is exactly todayTotalRecords
+
+  const totalRecords = records.length; // Can keep as raw length or dedupe historically if needed, but today is critical
+  const presentCount = records.filter((r) => r.status === "present").length;
+  const absentCount = records.filter((r) => r.status === "absent").length;
 
   return {
     totalDays: uniqueDates.size,

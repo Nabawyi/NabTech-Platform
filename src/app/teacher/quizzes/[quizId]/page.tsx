@@ -20,6 +20,7 @@ import {
   saveScoresAction 
 } from "@/app/actions/exams";
 import { type ExamRow, type StudentExamEntry, type StudentScoreEntry } from "@/types/domain";
+import ManualGradeForm from "@/components/teacher/ManualGradeForm";
 
 export default function QuizScoreEntryPage({ params }: { params: Promise<{ quizId: string }> }) {
   const { quizId } = use(params);
@@ -191,6 +192,9 @@ export default function QuizScoreEntryPage({ params }: { params: Promise<{ quizI
           </button>
         </div>
       </div>
+
+      {/* Quick Entry Form */}
+      <ManualGradeForm examId={quizId} onSuccess={fetchData} />
 
       {/* Quiz Info Card */}
       <div className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-[2rem] p-8 shadow-sm">

@@ -189,31 +189,31 @@ function EditLessonForm({ id }: EditLessonFormProps) {
       <div className="flex items-center gap-4">
         <button
           onClick={() => router.push("/teacher/lessons")}
-          className="p-3 rounded-xl bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 text-gray-400 hover:text-primary transition-all shadow-sm"
+          className="p-3 rounded-xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-400 hover:text-primary transition-all shadow-sm"
         >
           <ArrowRight className="w-5 h-5" />
         </button>
         <div>
-          <h1 className="text-2xl font-black text-foreground">تعديل الدرس: {title}</h1>
+          <h1 className="text-2xl font-black text-foreground dark:text-gray-100">تعديل الدرس: {title}</h1>
           <p className="text-sm text-gray-400 font-medium">قم بتعديل محتوى الدرس والأسئلة المرتبطة به</p>
         </div>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* Basic Info Card */}
-        <div className="bg-white dark:bg-gray-800 rounded-[2rem] shadow-sm border border-gray-100 dark:border-gray-700 p-8 space-y-6">
-          <h2 className="text-lg font-black text-slate-700 dark:text-gray-200 border-b border-gray-100 dark:border-gray-700 pb-4">معلومات الدرس الأساسية</h2>
+        <div className="bg-white dark:bg-gray-800 rounded-[2rem] shadow-sm border border-gray-200 dark:border-gray-700 p-8 space-y-6 relative z-10">
+          <h2 className="text-lg font-black text-gray-800 dark:text-gray-100 border-b border-gray-200 dark:border-gray-700 pb-4">معلومات الدرس الأساسية</h2>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 relative z-20">
             <div className="space-y-2">
-              <label className="block text-sm font-black text-slate-600 dark:text-gray-400">المرحلة الدراسية *</label>
+              <label className="block text-sm font-black text-gray-700 dark:text-gray-300">المرحلة الدراسية *</label>
               <select
                 value={level}
                 onChange={(e) => {
                   setLevel(e.target.value as SchoolLevel);
                   setGradeNumber(1);
                 }}
-                className="w-full px-5 py-4 bg-gray-50 dark:bg-gray-700/50 rounded-2xl border border-gray-100 dark:border-gray-700 focus:border-primary focus:ring-4 focus:ring-primary/10 outline-none font-bold text-foreground"
+                className="w-full px-4 py-3 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:border-primary focus:ring-4 focus:ring-primary/20 outline-none font-bold"
               >
                 {EDUCATION_LEVELS.map(l => (
                   <option key={l.id} value={l.id}>{l.nameAr}</option>
@@ -222,11 +222,11 @@ function EditLessonForm({ id }: EditLessonFormProps) {
             </div>
 
             <div className="space-y-2">
-              <label className="block text-sm font-black text-slate-600 dark:text-gray-400">الصف الدراسي *</label>
+              <label className="block text-sm font-black text-gray-700 dark:text-gray-300">الصف الدراسي *</label>
               <select
                 value={gradeNumber}
                 onChange={(e) => setGradeNumber(parseInt(e.target.value))}
-                className="w-full px-5 py-4 bg-gray-50 dark:bg-gray-700/50 rounded-2xl border border-gray-100 dark:border-gray-700 focus:border-primary focus:ring-4 focus:ring-primary/10 outline-none font-bold text-foreground"
+                className="w-full px-4 py-3 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:border-primary focus:ring-4 focus:ring-primary/20 outline-none font-bold"
               >
                 {currentLevelInfo?.grades.map(g => (
                   <option key={g.number} value={g.number}>{g.label}</option>
@@ -235,49 +235,49 @@ function EditLessonForm({ id }: EditLessonFormProps) {
             </div>
 
             <div className="space-y-2 md:col-span-2">
-              <label className="block text-sm font-black text-slate-600 dark:text-gray-400">عنوان الدرس *</label>
+              <label className="block text-sm font-black text-gray-700 dark:text-gray-300">عنوان الدرس *</label>
               <input
                 type="text"
                 required
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
-                className="w-full px-5 py-4 bg-gray-50 dark:bg-gray-700/50 rounded-2xl border border-gray-100 dark:border-gray-700 focus:border-primary focus:ring-4 focus:ring-primary/10 outline-none font-bold text-foreground"
+                className="w-full px-4 py-3 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:border-primary focus:ring-4 focus:ring-primary/20 outline-none font-bold"
                 placeholder="عنوان الدرس..."
               />
             </div>
 
             <div className="space-y-2 md:col-span-2">
-              <label className="block text-sm font-black text-slate-600 dark:text-gray-400">رابط الفيديو (YouTube) *</label>
+              <label className="block text-sm font-black text-gray-700 dark:text-gray-300">رابط الفيديو (YouTube) *</label>
               <input
                 type="url"
                 required
                 dir="ltr"
                 value={videoUrl}
                 onChange={(e) => setVideoUrl(e.target.value)}
-                className="w-full px-5 py-4 bg-gray-50 dark:bg-gray-700/50 rounded-2xl border border-gray-100 dark:border-gray-700 focus:border-primary focus:ring-4 focus:ring-primary/10 outline-none font-bold text-foreground text-left"
+                className="w-full px-4 py-3 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:border-primary focus:ring-4 focus:ring-primary/20 outline-none font-bold text-left"
                 placeholder="https://www.youtube.com/watch?v=..."
               />
             </div>
 
             <div className="space-y-2 md:col-span-2">
-              <label className="block text-sm font-black text-slate-600 dark:text-gray-400">وصف الدرس (اختياري)</label>
+              <label className="block text-sm font-black text-gray-700 dark:text-gray-300">وصف الدرس (اختياري)</label>
               <textarea
                 rows={3}
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
-                className="w-full px-5 py-4 bg-gray-50 dark:bg-gray-700/50 rounded-2xl border border-gray-100 dark:border-gray-700 focus:border-primary focus:ring-4 focus:ring-primary/10 outline-none font-bold text-foreground resize-none"
+                className="w-full px-4 py-3 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:border-primary focus:ring-4 focus:ring-primary/20 outline-none font-bold resize-none"
                 placeholder="اكتب نبذة عن الدرس..."
               />
             </div>
 
             <div className="space-y-2 md:col-span-2">
-              <label className="block text-sm font-black text-slate-600 dark:text-gray-400">رابط ملف PDF (اختياري)</label>
+              <label className="block text-sm font-black text-gray-700 dark:text-gray-300">رابط ملف PDF (اختياري)</label>
               <input
                 type="url"
                 dir="ltr"
                 value={pdfUrl}
                 onChange={(e) => setPdfUrl(e.target.value)}
-                className="w-full px-5 py-4 bg-gray-50 dark:bg-gray-700/50 rounded-2xl border border-gray-100 dark:border-gray-700 focus:border-primary focus:ring-4 focus:ring-primary/10 outline-none font-bold text-foreground text-left"
+                className="w-full px-4 py-3 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:border-primary focus:ring-4 focus:ring-primary/20 outline-none font-bold text-left"
                 placeholder="رابط ملف PDF..."
               />
             </div>
@@ -285,11 +285,11 @@ function EditLessonForm({ id }: EditLessonFormProps) {
         </div>
 
         {/* Quiz Builder Card */}
-        <div className="bg-white dark:bg-gray-800 rounded-[2rem] shadow-sm border border-gray-100 dark:border-gray-700 p-8 space-y-6">
-          <div className="flex items-center justify-between border-b border-gray-100 dark:border-gray-700 pb-4">
+        <div className="bg-white dark:bg-gray-800 rounded-[2rem] shadow-sm border border-gray-200 dark:border-gray-700 p-8 space-y-6 relative z-10">
+          <div className="flex items-center justify-between border-b border-gray-200 dark:border-gray-700 pb-4">
             <div className="flex items-center gap-3">
               <HelpCircle className="w-5 h-5 text-primary" />
-              <h2 className="text-lg font-black text-slate-700 dark:text-gray-200">أسئلة الدرس ({questions.length})</h2>
+              <h2 className="text-lg font-black text-gray-800 dark:text-gray-100">أسئلة الدرس ({questions.length})</h2>
             </div>
             <button
               type="button"
@@ -302,7 +302,7 @@ function EditLessonForm({ id }: EditLessonFormProps) {
 
           <div className="space-y-6">
             {questions.map((q, qi) => (
-              <div key={qi} className="p-6 bg-slate-50 dark:bg-gray-900 rounded-3xl border border-slate-100 dark:border-gray-700 space-y-4">
+              <div key={qi} className="p-6 bg-gray-50 dark:bg-gray-700/30 rounded-3xl border border-gray-200 dark:border-gray-700 space-y-4">
                 <div className="flex items-center gap-4">
                   <span className="w-8 h-8 bg-primary text-white rounded-xl flex items-center justify-center text-sm font-black flex-shrink-0">
                     {qi + 1}
@@ -312,19 +312,19 @@ function EditLessonForm({ id }: EditLessonFormProps) {
                     required
                     value={q.text}
                     onChange={(e) => updateQuestion(qi, "text", e.target.value)}
-                    className="flex-1 px-4 py-3 bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 focus:border-primary focus:ring-2 focus:ring-primary/10 outline-none font-bold text-foreground"
+                    className="flex-1 px-4 py-3 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:border-primary focus:ring-4 focus:ring-primary/20 outline-none font-bold"
                     placeholder="نص السؤال..."
                   />
                   <button
                     type="button"
                     onClick={() => removeQuestion(qi)}
-                    className="p-2.5 text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl transition-all"
+                    className="p-2.5 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl transition-all"
                   >
                     <Trash2 className="w-4 h-4" />
                   </button>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mr-12">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mr-12 relative z-20">
                   {q.options.map((opt, oi) => (
                     <div key={oi} className="flex items-center gap-3">
                       <button
@@ -333,7 +333,7 @@ function EditLessonForm({ id }: EditLessonFormProps) {
                         className={`w-6 h-6 rounded-full border-2 flex-shrink-0 transition-all ${
                           q.correct === oi
                             ? "bg-emerald-500 border-emerald-500"
-                            : "border-gray-300 hover:border-emerald-400"
+                            : "border-gray-300 dark:border-gray-600 hover:border-emerald-400"
                         }`}
                       />
                       <input
@@ -341,7 +341,7 @@ function EditLessonForm({ id }: EditLessonFormProps) {
                         required
                         value={opt}
                         onChange={(e) => updateOption(qi, oi, e.target.value)}
-                        className="flex-1 px-4 py-2.5 bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 focus:border-primary focus:ring-2 focus:ring-primary/10 outline-none font-medium text-sm text-foreground"
+                        className="flex-1 px-4 py-2.5 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:border-primary focus:ring-4 focus:ring-primary/20 outline-none font-medium text-sm"
                         placeholder={`الخيار ${oi + 1}`}
                       />
                     </div>
