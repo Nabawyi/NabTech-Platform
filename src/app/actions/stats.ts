@@ -154,6 +154,24 @@ export async function getDashboardStats(teacherId?: string, clientGradeCodes?: s
 
   const recentStudents = students.slice(0, 5);
 
+  // --- ATTENDANCE FIX ---
+  // The UI currently binds `todayTotalRecords` to the "Present" badge.
+  // We use the actual calculated 'todayPresent' from attendanceStats.
+  let calcPresent = attendanceStats.todayPresent ?? 0;
+  let calcAbsent = attendanceStats.todayAbsent ?? 0;
+
+  // Safety Check: present should never exceed total students
+  if (calcPresent > totalStudents) {
+    calcPresent = totalStudents;
+  }
+
+  // Safety Check: if Present + Absent > Total Students, it means we have records for students no longer active/deleted
+  if (calcPresent + calcAbsent > totalStudents) {
+     calcAbsent = Math.max(0, totalStudents - calcPresent);
+  }
+
+  const calcRate = totalStudents > 0 ? (calcPresent / totalStudents) * 100 : 0;
+
   return {
     totalStudents,
     activeStudents,
@@ -163,9 +181,9 @@ export async function getDashboardStats(teacherId?: string, clientGradeCodes?: s
     emptyGroups,
     gradeStats,
     attendance: {
-      todayTotalRecords: attendanceStats.todayTotalRecords ?? 0,
-      todayAbsent: attendanceStats.todayAbsent ?? 0,
-      todayRate: attendanceStats.todayRate ?? 0,
+      todayTotalRecords: calcPresent, // UI uses this for "Present" count
+      todayAbsent: calcAbsent,
+      todayRate: calcRate,
     },
     subscription,
     alerts: {

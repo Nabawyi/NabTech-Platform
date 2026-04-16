@@ -146,46 +146,7 @@ export default function TeacherDashboard() {
         {/* Main Section */}
         <div className="xl:col-span-2 space-y-6">
           
-          {/* Dynamic Grades Grid (The ROOT FIX) */}
-          <motion.div variants={itemVariants} className="bg-white dark:bg-slate-900 p-8 rounded-[2.5rem] border border-slate-100 dark:border-slate-800 shadow-sm hover:shadow-md transition-shadow">
-            <div className="flex items-center justify-between mb-8">
-              <div>
-                <h2 className="text-xl font-black text-slate-900 dark:text-white">الطلاب حسب الصف</h2>
-                <p className="text-sm text-slate-400 font-medium mt-1">توزيع حقيقي لطلابك النشطين</p>
-              </div>
-              <button 
-                onClick={() => fetchData(true)}
-                className={`p-3 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800 transition-all text-slate-400 active:scale-95 ${refreshing ? 'animate-spin text-blue-500' : ''}`}
-              >
-                <RefreshCcw className="w-5 h-5" />
-              </button>
-            </div>
 
-            {stats.gradeStats.length === 0 ? (
-               <div className="py-20 text-center border-2 border-dashed border-slate-100 dark:border-slate-800 rounded-[2rem]">
-                  <p className="text-sm font-bold text-slate-400">لم يتم تفعيل أي صفوف أو لا يوجد طلاب مخصصين بعد</p>
-               </div>
-            ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {stats.gradeStats.map((grade) => (
-                  <motion.div 
-                    whileHover={{ scale: 1.02 }}
-                    key={grade.code} 
-                    className="p-6 rounded-2xl bg-slate-50/50 dark:bg-slate-800/30 border border-slate-100 dark:border-slate-700/50 group hover:border-blue-500/30 hover:bg-blue-50/50 dark:hover:bg-blue-500/5 transition-all"
-                  >
-                    <div className="flex justify-between items-center mb-6">
-                      <span className="text-xs font-bold text-slate-500 dark:text-slate-400 bg-white dark:bg-slate-800 px-3 py-1 rounded-full shadow-sm">{grade.levelName}</span>
-                      <span className="text-sm font-black text-blue-500 bg-blue-50 dark:bg-blue-500/10 px-3 py-1 rounded-full tabular-nums">{Math.round(grade.percentage)}%</span>
-                    </div>
-                    <div className="flex justify-between items-end">
-                       <p className="text-base font-bold text-slate-700 dark:text-slate-200">{grade.label}</p>
-                       <p className="text-3xl font-black text-slate-900 dark:text-white tabular-nums">{grade.count}</p>
-                    </div>
-                  </motion.div>
-                ))}
-              </div>
-            )}
-          </motion.div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Minimal Attendance */}
@@ -245,6 +206,46 @@ export default function TeacherDashboard() {
               </div>
             </motion.div>
           </div>
+          {/* Dynamic Grades Grid (The ROOT FIX) */}
+          <motion.div variants={itemVariants} className="bg-white dark:bg-slate-900 p-8 rounded-[2.5rem] border border-slate-100 dark:border-slate-800 shadow-sm hover:shadow-md transition-shadow">
+            <div className="flex items-center justify-between mb-8">
+              <div>
+                <h2 className="text-xl font-black text-slate-900 dark:text-white">الطلاب حسب الصف</h2>
+                <p className="text-sm text-slate-400 font-medium mt-1">توزيع حقيقي لطلابك النشطين</p>
+              </div>
+              <button
+                onClick={() => fetchData(true)}
+                className={`p-3 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800 transition-all text-slate-400 active:scale-95 ${refreshing ? 'animate-spin text-blue-500' : ''}`}
+              >
+                <RefreshCcw className="w-5 h-5" />
+              </button>
+            </div>
+
+            {stats.gradeStats.length === 0 ? (
+              <div className="py-20 text-center border-2 border-dashed border-slate-100 dark:border-slate-800 rounded-[2rem]">
+                <p className="text-sm font-bold text-slate-400">لم يتم تفعيل أي صفوف أو لا يوجد طلاب مخصصين بعد</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {stats.gradeStats.map((grade) => (
+                  <motion.div
+                    whileHover={{ scale: 1.02 }}
+                    key={grade.code}
+                    className="p-6 rounded-2xl bg-slate-50/50 dark:bg-slate-800/30 border border-slate-100 dark:border-slate-700/50 group hover:border-blue-500/30 hover:bg-blue-50/50 dark:hover:bg-blue-500/5 transition-all"
+                  >
+                    <div className="flex justify-between items-center mb-6">
+                      <span className="text-xs font-bold text-slate-500 dark:text-slate-400 bg-white dark:bg-slate-800 px-3 py-1 rounded-full shadow-sm">{grade.levelName}</span>
+                      <span className="text-sm font-black text-blue-500 bg-blue-50 dark:bg-blue-500/10 px-3 py-1 rounded-full tabular-nums">{Math.round(grade.percentage)}%</span>
+                    </div>
+                    <div className="flex justify-between items-end">
+                      <p className="text-base font-bold text-slate-700 dark:text-slate-200">{grade.label}</p>
+                      <p className="text-3xl font-black text-slate-900 dark:text-white tabular-nums">{grade.count}</p>
+                    </div>
+                  </motion.div>
+                ))}
+              </div>
+            )}
+          </motion.div>
         </div>
 
         {/* Sidebar Mini Section */}
