@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Check, Star } from "lucide-react";
+import { Check, Star, ArrowLeft } from "lucide-react";
 import { motion } from "framer-motion";
 
 export default function PricingSection() {
@@ -25,9 +25,10 @@ export default function PricingSection() {
   ];
 
   return (
-    <section className="py-24 bg-white dark:bg-slate-950 transition-colors duration-300 relative overflow-hidden" id="pricing">
-      <div className="absolute top-[20%] right-[-10%] w-96 h-96 bg-blue-500/5 blur-[100px] rounded-full pointer-events-none"></div>
-      <div className="absolute bottom-[10%] left-[-10%] w-96 h-96 bg-indigo-500/5 blur-[100px] rounded-full pointer-events-none"></div>
+    <section className="py-24 bg-slate-50 dark:bg-slate-900 transition-colors duration-300 relative overflow-hidden" id="pricing">
+      {/* Background Decor */}
+      <div className="absolute top-[20%] right-[-10%] w-[500px] h-[500px] bg-sky-400/5 dark:bg-sky-500/10 blur-[120px] rounded-full pointer-events-none"></div>
+      <div className="absolute bottom-[10%] left-[-10%] w-[500px] h-[500px] bg-indigo-500/5 dark:bg-indigo-600/10 blur-[120px] rounded-full pointer-events-none"></div>
 
       <div className="container mx-auto px-4 sm:px-6 relative z-10">
         <motion.div 
@@ -37,16 +38,20 @@ export default function PricingSection() {
           transition={{ duration: 0.6 }}
           className="text-center max-w-3xl mx-auto mb-20"
         >
-          <span className="text-blue-500 font-bold tracking-wider uppercase text-sm mb-3 block inline-block py-1 px-3 bg-blue-50 dark:bg-blue-500/10 rounded-full">الأسعار</span>
-          <h2 className="text-3xl sm:text-5xl font-black text-slate-900 dark:text-white mb-6">
+          <span className="inline-block py-1 px-3 bg-sky-100 dark:bg-sky-900/30 text-sky-600 dark:text-sky-400 rounded-full font-bold tracking-wider uppercase text-sm mb-4 border border-sky-200 dark:border-sky-800/30 shadow-sm">
+            الأسعار
+          </span>
+          <h2 className="text-4xl sm:text-5xl font-black text-slate-900 dark:text-white mb-6 tracking-tight">
             خطة أسعار تناسب طموحك
           </h2>
-          <p className="text-gray-500 dark:text-gray-400 font-medium text-lg">
-            وفر وقتك وجهدك وابدأ في إدارة منصتك بكل بساطة.
+          <p className="text-slate-500 dark:text-slate-400 font-medium text-xl">
+            وفر وقتك وجهدك وابدأ في إدارة منصتك بكل احترافية وبدون تعقيد.
           </p>
         </motion.div>
 
-        <div className="max-w-xl mx-auto">
+        <div className="max-w-xl mx-auto relative">
+          <div className="absolute inset-0 bg-gradient-to-b from-sky-400/20 to-blue-600/20 blur-3xl rounded-[3rem] -z-10 animate-pulse"></div>
+          
           {plans.map((plan, index) => (
             <motion.div 
               key={index}
@@ -54,24 +59,25 @@ export default function PricingSection() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, margin: "-100px" }}
               transition={{ duration: 0.5, delay: index * 0.2 }}
-              whileHover={{ y: -5 }}
-              className="relative bg-white dark:bg-slate-900 rounded-[2.5rem] p-8 sm:p-12 transition-all duration-300 border border-blue-500 dark:border-blue-500/50 shadow-2xl shadow-blue-500/20"
+              whileHover={{ y: -8 }}
+              className="relative bg-white dark:bg-slate-800 rounded-[2.5rem] p-8 sm:p-12 transition-all duration-300 border-2 border-sky-400 dark:border-sky-500 shadow-2xl shadow-sky-900/10"
             >
               <div className="absolute top-0 right-1/2 translate-x-1/2 -translate-y-1/2">
-                <div className="flex items-center gap-1 bg-gradient-to-r from-blue-600 to-indigo-500 text-white text-xs font-bold px-4 py-1.5 rounded-full shadow-lg">
-                  <Star className="w-3.5 h-3.5 fill-current" />
+                <div className="flex items-center gap-1.5 bg-gradient-to-l from-sky-400 to-blue-600 text-white text-sm font-bold px-5 py-2 rounded-full shadow-lg shadow-sky-500/30">
+                  <Star className="w-4 h-4 fill-current text-amber-300" />
                   الباقة الموصى بها
                 </div>
               </div>
 
-              <h3 className="text-2xl font-black text-slate-900 dark:text-white mb-2 text-center">{plan.name}</h3>
-              <p className="text-gray-500 dark:text-gray-400 font-medium mb-8 text-sm text-center">{plan.desc}</p>
+              <h3 className="text-3xl font-black text-slate-900 dark:text-white mb-3 text-center tracking-tight">{plan.name}</h3>
+              <p className="text-slate-500 dark:text-slate-400 font-medium mb-8 text-center text-lg">{plan.desc}</p>
               
-              <div className="mb-10 flex items-baseline justify-center gap-2">
-                <span className="text-4xl sm:text-5xl font-black text-slate-900 dark:text-white tracking-tight">{plan.price}</span>
+              <div className="mb-10 flex flex-col items-center justify-center gap-1">
+                <span className="text-5xl sm:text-6xl font-black text-slate-900 dark:text-white tracking-tight">{plan.price}</span>
+                <span className="text-sky-600 dark:text-sky-400 font-bold">{plan.duration}</span>
               </div>
 
-              <ul className="space-y-4 mb-10 max-w-sm mx-auto">
+              <ul className="space-y-5 mb-10 max-w-sm mx-auto">
                 {plan.features.map((feature, i) => (
                   <motion.li 
                     key={i} 
@@ -80,19 +86,21 @@ export default function PricingSection() {
                     transition={{ delay: 0.3 + (i * 0.1) }}
                     className="flex items-center gap-4"
                   >
-                    <div className="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 bg-blue-50 text-blue-500 dark:bg-blue-500/20 dark:text-blue-400">
-                      <Check className="w-3.5 h-3.5 font-black" />
+                    <div className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 bg-sky-50 text-sky-500 dark:bg-sky-900/40 dark:text-sky-400">
+                      <Check className="w-5 h-5 font-black" />
                     </div>
-                    <span className="font-bold text-slate-700 dark:text-slate-300 text-sm">{feature}</span>
+                    <span className="font-bold text-slate-700 dark:text-slate-200 text-lg">{feature}</span>
                   </motion.li>
                 ))}
               </ul>
               
               <Link
                 href={plan.href}
-                className="block w-full py-4 px-6 rounded-2xl font-bold text-center transition-all active:scale-95 bg-blue-500 text-white hover:bg-blue-600 shadow-lg shadow-blue-500/25"
+                className="group flex items-center justify-center gap-2 w-full py-5 px-6 rounded-2xl font-bold text-xl text-center transition-all active:scale-95 bg-sky-500 text-white hover:bg-sky-600 shadow-xl shadow-sky-500/25 relative overflow-hidden"
               >
-                {plan.cta}
+                <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300 ease-in-out"></div>
+                <span className="relative z-10">{plan.cta}</span>
+                <ArrowLeft className="w-6 h-6 relative z-10 group-hover:-translate-x-1 transition-transform" />
               </Link>
             </motion.div>
           ))}

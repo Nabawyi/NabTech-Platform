@@ -2,64 +2,81 @@
 
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { GraduationCap, Briefcase } from 'lucide-react';
+import { GraduationCap, Briefcase, Star, ArrowLeft } from 'lucide-react';
 
 export default function HeroSection() {
   return (
-    <section className="relative overflow-hidden bg-white min-h-[80vh] flex items-center py-20 dark:bg-slate-950 transition-colors duration-300">
-      <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808008_1px,transparent_1px),linear-gradient(to_bottom,#80808008_1px,transparent_1px)] bg-[size:32px_32px] dark:bg-[linear-gradient(to_right,#ffffff05_1px,transparent_1px),linear-gradient(to_bottom,#ffffff05_1px,transparent_1px)]"></div>
-      <div className="absolute left-0 right-0 top-1/2 -translate-y-1/2 -z-10 m-auto h-[500px] w-[500px] rounded-full bg-blue-500 opacity-[0.05] blur-[150px] pointer-events-none dark:opacity-[0.1]"></div>
+    <section className="relative overflow-hidden bg-white min-h-[90vh] flex flex-col items-center justify-center pt-32 pb-20 dark:bg-slate-950 transition-colors duration-300">
+      {/* Dynamic Background Patterns */}
+      <div className="absolute inset-0 bg-[linear-gradient(to_right,#e2e8f0_1px,transparent_1px),linear-gradient(to_bottom,#e2e8f0_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_100%)] dark:bg-[linear-gradient(to_right,#ffffff0a_1px,transparent_1px),linear-gradient(to_bottom,#ffffff0a_1px,transparent_1px)] opacity-50"></div>
       
-      <div className="container relative mx-auto px-4 sm:px-6 w-full">
+      {/* Ambient Glow */}
+      <div className="absolute top-0 right-1/4 -z-10 w-[600px] h-[600px] rounded-full bg-sky-400/20 blur-[120px] pointer-events-none mix-blend-multiply dark:mix-blend-screen dark:bg-sky-500/10"></div>
+      <div className="absolute top-20 left-1/4 -z-10 w-[500px] h-[500px] rounded-full bg-orange-400/10 blur-[100px] pointer-events-none mix-blend-multiply dark:mix-blend-screen dark:bg-orange-500/10"></div>
+      
+      <div className="container relative mx-auto px-4 sm:px-6 w-full flex-grow flex flex-col justify-center">
         <motion.div 
-          initial={{ opacity: 0, y: 30 }}
+          initial={{ opacity: 0, y: 40 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, ease: "easeOut" }}
-          className="mx-auto max-w-4xl text-center"
+          transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
+          className="mx-auto max-w-5xl text-center"
         >
+          {/* Top Badge */}
           <motion.div 
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: 0.2, duration: 0.5 }}
-            className="mb-8 inline-flex items-center gap-2 rounded-full border border-gray-100 dark:border-slate-800 bg-gray-50/50 dark:bg-slate-900/50 px-5 py-2.5 backdrop-blur-sm shadow-sm"
+            className="mb-8 mx-auto inline-flex items-center gap-2.5 rounded-full border border-sky-100 dark:border-sky-900/50 bg-sky-50/80 dark:bg-sky-900/20 px-4 py-2 backdrop-blur-md shadow-sm"
           >
-            <span className="flex h-2.5 w-2.5 rounded-full bg-blue-500 animate-pulse"></span>
-            <p className="text-sm font-bold text-slate-600 dark:text-slate-300 tracking-tight">المنصة التعليمية الأقوى في مصر</p>
+            <span className="relative flex h-3 w-3">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-sky-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-3 w-3 bg-sky-500"></span>
+            </span>
+            <p className="text-sm font-semibold text-sky-800 dark:text-sky-200 tracking-wide">الجيل الجديد من منصات التعليم الذكية</p>
           </motion.div>
           
-          <h1 className="mb-8 text-5xl font-black leading-[1.2] text-slate-900 dark:text-white md:text-6xl lg:text-8xl tracking-tight">
-            مستقبلك التعليمي <br className="hidden md:block" /> يبدأ من <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-500 inline-block relative px-2">NabTech</span>
+          {/* Main Heading */}
+          <h1 className="mb-6 text-5xl font-black leading-[1.1] text-slate-900 dark:text-white md:text-7xl lg:text-[5.5rem] tracking-tight">
+            مستقبلك التعليمي <br className="hidden md:block" /> 
+            يبدأ من <span className="text-transparent bg-clip-text bg-gradient-to-l from-sky-400 via-sky-500 to-blue-600 inline-block relative pr-2 pb-2 drop-shadow-sm">NabTech</span>
           </h1>
           
-          <p className="mb-10 text-xl font-medium text-gray-500 dark:text-gray-400 leading-relaxed max-w-2xl mx-auto">
+          {/* Subtitle */}
+          <p className="mb-12 text-xl md:text-2xl font-medium text-slate-600 dark:text-slate-300 leading-relaxed max-w-3xl mx-auto">
             منصة متكاملة تواكب طموحك. سواء كنت معلماً يبحث عن وسيلة فعالة لإدارة دروسه، أو طالباً يسعى للتفوق بمنهجية حديثة.
           </p>
           
+          {/* CTA Buttons */}
           <motion.div 
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.4, duration: 0.5 }}
-            className="flex flex-col sm:flex-row items-center justify-center gap-4"
+            className="flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-6"
           >
             <Link 
               href="/register-teacher" 
-              className="group relative flex w-full sm:w-auto items-center justify-center gap-2 rounded-xl bg-slate-900 dark:bg-white px-8 py-4 text-lg font-bold text-white dark:text-slate-900 transition-all hover:bg-slate-800 dark:hover:bg-gray-100 hover:scale-[1.03] active:scale-95 shadow-xl shadow-slate-900/20 dark:shadow-white/10 overflow-hidden"
+              className="group relative flex w-full sm:w-auto items-center justify-center gap-3 rounded-2xl bg-orange-500 hover:bg-orange-600 px-8 py-4 text-lg font-bold text-white transition-all hover:scale-[1.02] active:scale-95 shadow-xl shadow-orange-500/25 overflow-hidden"
             >
-              <span className="absolute inset-0 w-full h-full -mt-1 rounded-lg opacity-30 bg-gradient-to-b from-transparent via-transparent to-black pointer-events-none"></span>
-              <Briefcase className="w-5 h-5 group-hover:-translate-y-0.5 transition-transform" />
-              ابدأ كمدرس
+              <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300 ease-in-out"></div>
+              <Briefcase className="w-5 h-5 relative z-10" />
+              <span className="relative z-10">ابدأ التدريس مجاناً</span>
+              <ArrowLeft className="w-5 h-5 relative z-10 group-hover:-translate-x-1 transition-transform" />
             </Link>
             
             <Link 
               href="/login" 
-              className="group flex w-full sm:w-auto items-center justify-center gap-2 rounded-xl bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 px-8 py-4 text-lg font-bold text-slate-700 dark:text-slate-200 transition-all hover:bg-gray-50 dark:hover:bg-slate-800 hover:border-blue-200 dark:hover:border-blue-900 hover:scale-[1.03] active:scale-95 shadow-sm"
+              className="group flex w-full sm:w-auto items-center justify-center gap-3 rounded-2xl bg-white dark:bg-slate-900 border-2 border-slate-200 dark:border-slate-800 px-8 py-4 text-lg font-bold text-slate-700 dark:text-slate-200 transition-all hover:bg-slate-50 dark:hover:bg-slate-800 hover:border-sky-300 dark:hover:border-sky-700 hover:scale-[1.02] active:scale-95 shadow-sm"
             >
-              <GraduationCap className="w-5 h-5 group-hover:-translate-y-0.5 transition-transform text-blue-500" />
-              سجل كطالب
+              <GraduationCap className="w-5 h-5 text-sky-500 group-hover:scale-110 transition-transform" />
+              <span>تسجيل دخول الطالب</span>
             </Link>
           </motion.div>
+
+          
+
         </motion.div>
       </div>
     </section>
   );
 }
+
